@@ -1,2 +1,459 @@
 # basketball
-Basketball analytics projects
+this repo is for my basketball analytics projects, the first one is predicting DBPM from combine data. A draft readme is below that was made with help from LLMs.
+
+# NBA Combine Rookie Defensive Model Data
+
+[![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](LICENSE)
+
+An exploratory basketball analytics project asking whether **pre-draft NBA Draft Combine measurements** can help predict **rookie-season defensive outcomes**.
+
+This repository centers on a **2025 model-building dataset** and a **2026 prediction dataset**. The 2025 data links combine measurements to rookie-season defensive statistics. The 2026 data applies the preferred model to generate pre-rookie predicted DBPM values.
+
+Primary outcome variables explored:
+
+- **Defensive Box Plus/Minus (DBPM)**
+- **Defensive Win Shares (DWS)**
+
+The current preferred model uses DBPM as the dependent variable because DBPM behaved more like a rate-style defensive impact measure, while DWS was more sensitive to cumulative role, opportunity, and playing-time context.
+
+---
+
+## Research Question
+
+**Can pre-draft physical and athletic measurements help predict rookie defensive value?**
+
+The project tests whether combine variables such as wingspan, shuttle run, lane agility, and hand width contain useful information for projecting early NBA defensive translation.
+
+Important modeling principle:
+
+> Rookie-season outcomes such as DWS and DBPM are used as **dependent variables only**. They should not be used as predictors when the goal is a clean pre-draft model.
+
+---
+
+## Current Data Files
+
+### 2025 model-building file
+
+```text
+combine_rookie_defensive_model_data_v2_20260516_031444_CT.csv
+```
+
+This file includes 2025 combine measurements, rookie NBA defensive outcomes, agility/shuttle values, hand measurements, and model-ready flags.
+
+### 2026 prediction file
+
+```text
+combine_rookie_defensive_prediction_data_2026_v2_full_model_inputs_20260516_034524_CT.csv
+```
+
+This file includes 2026 combine measurements and predicted rookie DBPM values generated from the preferred 2025 model.
+
+### Bibliography
+
+```text
+rookie_dws_dataset_bibliography_v4_20260516_040733_CT.md
+```
+
+This file records public sources, API notes, and player-level validation references.
+
+---
+
+## Dataset Summary
+
+### 2025 model-building dataset
+
+| Field | Count |
+|---|---:|
+| Rows | 78 |
+| Original 75 invitees | 75 |
+| Additional/StatLab-only rows | 3 |
+| Height values | 63 |
+| Wingspan values | 59 |
+| Lane agility values | 74 |
+| Shuttle run values | 71 |
+| Hand length values | 77 |
+| Hand width values | 77 |
+| Rows with full preferred-model inputs | 41 |
+
+### 2026 prediction dataset
+
+| Field | Count |
+|---|---:|
+| Rows | 75 |
+| Wingspan values | 75 |
+| Hand width values | 75 |
+| Lane agility values | 71 |
+| Shuttle run values | 71 |
+| Rows with full prediction inputs | 71 |
+
+---
+
+## Key Columns
+
+| Column | Description |
+|---|---|
+| `Player` | Player name |
+| `Roster_Status` | Whether the row came from the original invitee list or additional Stat Lab context |
+| `Original_75_Invitee` | Flag for announced 75-player invitee backbone |
+| `Additional_StatLab_Only` | Flag for retained additional Stat Lab rows |
+| `Height`, `Height_in` | Combine height as text and decimal inches |
+| `Wingspan`, `Wingspan_in` | Combine wingspan as text and decimal inches |
+| `Standing_Reach`, `Standing_Reach_in` | Standing reach as text and decimal inches, where available |
+| `Lane_Agility_Time` | Lane agility time in seconds |
+| `Shuttle_Run` | Shuttle run time in seconds |
+| `Hand_Length` | Hand length in inches |
+| `Hand_Width` | Hand width in inches |
+| `MP` | Rookie-season NBA minutes played |
+| `DWS` | Rookie-season Defensive Win Shares |
+| `DBPM` | Rookie-season Defensive Box Plus/Minus |
+| `DWS_per_1000_MP` | Defensive Win Shares per 1,000 minutes |
+| `Predicted_DBPM` | Predicted DBPM from the preferred model, for 2026 prediction data |
+| `Modeling_Ready` | Flag for baseline model-ready rows |
+| `Measurement_Source` | Measurement provenance notes |
+| `Stats_Source` | Season-stat provenance notes |
+| `Notes` | Audit notes and corrections |
+
+---
+
+## Data Sources
+
+Core sources include:
+
+- Basketball Reference rookie and advanced stats pages
+- Basketball Reference Win Shares methodology page
+- NBA.com Draft Combine Anthropometric Stats
+- NBA/AWS Draft Combine Stat Lab
+- Hoops Rumors 2025 combine invitee announcement
+- Sporting News / Yahoo Sports combine measurement tables
+- Sports Reference college basketball player pages for validation examples
+- NBADraft.net measurement and athleticism notes
+- ESPN, CBS Sports, Floor & Ceiling, and other combine coverage
+
+See the bibliography Markdown file for the running source list and API-attempt notes.
+
+---
+
+## Important Data Notes
+
+This dataset is a working research artifact, not a canonical database.
+
+Known caveats:
+
+1. NBA Stat Lab is interactive and difficult to scrape directly in this environment.
+2. The NBA Stats API endpoint `draftcombineplayeranthro` was identified as likely relevant, but requests from the working environment returned HTTP 403 or timed out.
+3. Some measurements were manually transcribed from NBA Stat Lab screenshots.
+4. Some players have missing height, wingspan, standing reach, lane agility, or shuttle values.
+5. Adou Thiero’s wingspan was corrected to `7' 0.00"` after a likely `7' 9"` source typo was identified.
+6. Three 2025 rows are retained as `Additional_StatLab_Only`: Lachlan Olbrich, Mackenzie Mgbako, and Yanic Konan Niederhauser.
+7. Position labels are intentionally not used as modeling features in the current version.
+8. The model is exploratory and should not be treated as a complete scouting grade.
+
+---
+
+## Model Development Summary
+
+Early models tested height, wingspan, and a `WH` interaction term:
+
+```text
+WH = Height_in × Wingspan_in
+```
+
+Those size-only models performed weakly, especially for DWS. DBPM was more promising than DWS as a dependent variable.
+
+The model improved when movement variables were added, especially shuttle run. Later, hand width was added and modestly improved model fit.
+
+---
+
+## Preferred Model: Rookie DBPM
+
+### Model specification
+
+```text
+DBPM = -8.895696
+       + 0.065647 × Wingspan_in
+       + 0.638983 × Lane_Agility_Time
+       - 3.392342 × Shuttle_Run
+       + 0.628937 × Hand_Width
+```
+
+Equivalent formula:
+
+```text
+DBPM ~ Wingspan_in + Lane_Agility_Time + Shuttle_Run + Hand_Width
+```
+
+### Model fit
+
+| Metric | Value |
+|---|---:|
+| n | 41 |
+| R² | 0.258 |
+| Adjusted R² | 0.176 |
+| AIC | 158.908 |
+| RMSE | 1.487 |
+
+### Coefficients
+
+| Predictor | Coefficient | p-value |
+|---|---:|---:|
+| Intercept | -8.896 | 0.211 |
+| Wingspan_in | 0.066 | 0.404 |
+| Lane_Agility_Time | 0.639 | 0.389 |
+| Shuttle_Run | -3.392 | 0.062 |
+| Hand_Width | 0.629 | 0.156 |
+
+### Interpretation
+
+This model explains about **25.8%** of the variation in rookie DBPM, with an adjusted R² of **17.6%**. For a small exploratory combine-only model, that is a meaningful signal, but not enough to treat the model as a standalone prediction engine.
+
+The clearest signal is **Shuttle_Run**. Its coefficient is negative, which fits basketball logic: lower shuttle time means better change-of-direction speed, and faster shuttle performance is associated with higher rookie DBPM. The effect is marginally significant at `p = 0.062`.
+
+**Hand_Width** has a positive coefficient and modestly improves model fit. It is not statistically significant, but it is directionally plausible because wider hands may help with ball disruption, rebounding control, and defensive playmaking.
+
+**Wingspan_in** is positive but not statistically significant once mobility and hand width are included.
+
+**Lane_Agility_Time** is not statistically significant and has a counterintuitive positive sign. It should be retained as a measurement field, but interpreted cautiously.
+
+### Practical takeaway
+
+> Rookie defensive impact appears more connected to change-of-direction ability, especially shuttle performance, than to raw size alone in this 2025 combine sample.
+
+---
+
+## DWS Model Results
+
+The same combine variables were also tested against Defensive Win Shares.
+
+A simple DWS model:
+
+```text
+DWS ~ Wingspan_in + Lane_Agility_Time + Shuttle_Run
+```
+
+performed weakly:
+
+| Metric | Value |
+|---|---:|
+| n | 41 |
+| R² | 0.065 |
+| Adjusted R² | -0.011 |
+| AIC | 101.550 |
+| RMSE | 0.757 |
+
+None of the predictors were statistically significant. DWS appears less suitable for this initial pre-draft combine-only model, likely because it is a cumulative stat influenced by minutes, team context, role, and opportunity.
+
+---
+
+## 2026 Prediction Results
+
+The preferred 2025 DBPM model was applied to the 2026 combine class.
+
+Top predicted rookie DBPM values from the current 2026 prediction dataset:
+
+| Rank | Player | Predicted DBPM |
+|---:|---|---:|
+| 1 | Flory Bidunga | 1.187 |
+| 2 | Reuben Chinyelu | 1.052 |
+| 3 | Trevon Brazile | 1.045 |
+| 4 | Karim Lopez | 0.852 |
+| 5 | Tarris Reed Jr. | 0.838 |
+| 6 | Baba Miller | 0.707 |
+| 7 | Aaron Nkrumah | 0.581 |
+| 8 | Zuby Ejiofor | 0.580 |
+| 9 | Yaxel Lendeborg | 0.537 |
+| 10 | Matthew Able | 0.354 |
+
+### Validation example: Flory Bidunga
+
+Flory Bidunga was the top 2026 predicted rookie DBPM player in the current model. His college profile provides a useful sanity check:
+
+- 2024-25 Kansas DBPM: 6.2
+- 2025-26 Kansas DBPM: 5.6
+- Career college DBPM: 5.8
+
+This does not prove the model is correct, but it suggests that the model’s top prediction aligns with a player who also showed strong college defensive impact.
+
+---
+
+## Interactive Predictor Tool
+
+A mobile-friendly single-page web app is planned for this project.
+
+The app should allow someone to open the page on a phone and quickly see:
+
+- the preferred model,
+- the key findings,
+- the 2026 predicted DBPM leaderboard,
+- a player search/filter,
+- caveats,
+- and source/provenance notes.
+
+Suggested app stack:
+
+- static HTML/CSS/JavaScript, or
+- React with a simple static build,
+- deployable through GitHub Pages, Netlify, or Vercel.
+
+Current model formula for the app:
+
+```text
+Predicted DBPM = -8.896
+               + 0.066 × Wingspan_in
+               + 0.639 × Lane_Agility_Time
+               - 3.392 × Shuttle_Run
+               + 0.629 × Hand_Width
+```
+
+Recommended app sections:
+
+1. Hero section
+2. Key metric cards
+3. Model formula
+4. Coefficient table
+5. 2026 prediction leaderboard
+6. Search/filter
+7. Caveats
+8. Data sources
+
+The tool should be mobile-first and suitable for sharing by link or QR code.
+
+---
+
+## LLM Collaboration Note
+
+This project was developed through an interactive multi-LLM workflow.
+
+Contributions included:
+
+- **ChatGPT 5.5 in the web browser**: spreadsheet/file handling, dataset consolidation, CSV creation, model fitting, API probing, documentation drafting, bibliography maintenance, and interpretation.
+- **Microsoft Copilot in the browser**: dataset audits, Mode B audit checks, README revision suggestions, and validation notes.
+- **DeepSeek in the browser**: model exploration notes, final model framing, and interactive predictor concept refinements.
+- Additional LLM outputs may be added as separate notes or audits over time.
+
+The goal is not to hide the multi-agent workflow. The goal is to make it inspectable.
+
+Suggested notes structure:
+
+```text
+notes/
+├── chatgpt_5_5_worklog.md
+├── copilot_audit.md
+├── deepseek_model_notes.md
+└── future_llm_reviews.md
+```
+
+Other LLMs are welcome to add their own explanations, critiques, model checks, and source audits.
+
+---
+
+## Quickstart
+
+### Load the processed 2025 model dataset
+
+```python
+import pandas as pd
+
+df = pd.read_csv("data/processed/combine_rookie_defensive_model_data_v2_20260516_031444_CT.csv")
+
+model_df = df[
+    df["MP"].notna()
+    & (df["MP"] > 0)
+    & df["Wingspan_in"].notna()
+    & df["Lane_Agility_Time"].notna()
+    & df["Shuttle_Run"].notna()
+    & df["Hand_Width"].notna()
+    & df["DBPM"].notna()
+].copy()
+
+print(model_df.shape)
+```
+
+### Compute predicted DBPM
+
+```python
+df["Predicted_DBPM"] = (
+    -8.895696
+    + 0.065647 * df["Wingspan_in"]
+    + 0.638983 * df["Lane_Agility_Time"]
+    - 3.392342 * df["Shuttle_Run"]
+    + 0.628937 * df["Hand_Width"]
+)
+```
+
+---
+
+## Suggested Repository Structure
+
+```text
+.
+├── README.md
+├── LICENSE
+├── data/
+│   ├── raw/
+│   ├── interim/
+│   └── processed/
+├── notebooks/
+├── scripts/
+├── notes/
+├── bibliography/
+├── webapp/
+└── outputs/
+```
+
+Suggested placement:
+
+```text
+data/processed/combine_rookie_defensive_model_data_v2_20260516_031444_CT.csv
+data/processed/combine_rookie_defensive_prediction_data_2026_v2_full_model_inputs_20260516_034524_CT.csv
+bibliography/rookie_dws_dataset_bibliography_v4_20260516_040733_CT.md
+notes/copilot_mode_b_audit.md
+notes/deepseek_model_notes.md
+webapp/
+```
+
+---
+
+## Suggested Next Steps
+
+1. Add scripts that rebuild processed CSVs from raw/interim sources.
+2. Move manual screenshot transcriptions into structured audit files.
+3. Add a complete data dictionary.
+4. Add baseline regression notebooks.
+5. Add versioned model outputs.
+6. Host the mobile-friendly predictor app.
+7. Add QR-code sharing for the web app.
+8. Attempt NBA Stats API access from a local machine with browser-compatible headers.
+9. Extend the dataset to 2024 and earlier combine classes.
+10. Validate the preferred DBPM model out of sample.
+11. Track hand width as a potential additional defensive signal in future combine classes.
+12. Compare DBPM, DWS, and rate-adjusted defensive outcomes.
+
+---
+
+## License
+
+This project is licensed under the BSD 3-Clause "New" or "Revised" License.
+
+SPDX identifier:
+
+```text
+BSD-3-Clause
+```
+
+See [`LICENSE`](LICENSE) for the full license text.
+
+### Licensing note for data
+
+The repository license covers code, scripts, documentation, and original project materials in this repository unless otherwise noted. The underlying basketball statistics and combine measurements were compiled from public third-party sources. Those source materials may have their own terms of use. This repository should preserve source attribution and provenance notes for all derived datasets.
+
+---
+
+## Generated / Updated
+
+README updated with:
+
+- ChatGPT 5.5 in the web browser
+- Microsoft Copilot in the browser
+- DeepSeek in the browser
+
+Date: 2026-05-16 04:11:54 CDT
