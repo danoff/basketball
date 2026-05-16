@@ -1,0 +1,21 @@
+# NBA Combine Rookie Defensive Model
+
+A single-page, mobile-friendly static web app that summarizes an exploratory NBA Draft Combine defensive prediction project.
+
+## What the page includes
+
+- A hero summary for the 2025 rookie DBPM model.
+- Key model-fit cards for R², adjusted R², best signal, and complete 2026 predictions.
+- A readable model formula and variable descriptions.
+- A coefficient table with p-values and plain-English interpretations.
+- A searchable 2026 predicted rookie DBPM leaderboard loaded from a local CSV.
+- A top-10 / all-complete-predictions toggle.
+- Caveats and data provenance.
+
+## Data setup
+
+Create or use the included `data/` folder and place these files inside it:
+
+```text
+data/combine_rookie_defensive_model_data_v2_20260516_031444_CT.csv
+data/combine_rookie_defensive_prediction_data_2026_v2_full_model_inputs_20260516_034524_CT.csv
