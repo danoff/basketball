@@ -34,6 +34,11 @@
     input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(92,200,255,.15); }
     button { border: 0; border-radius: 14px; padding: 12px 15px; color: #06101e; background: var(--blue); font-weight: 800; cursor: pointer; }
     button.secondary { color: var(--text); background: #172941; border: 1px solid var(--line); }
+    button.danger { color: #fff; background: rgba(255,122,144,.16); border: 1px solid rgba(255,122,144,.45); }
+    .calc-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .grid-4, .entry-grid { display: grid; gap: 12px; }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .entry-grid { grid-template-columns: minmax(180px, 1.4fr) repeat(4, 1fr); }
     .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
     label { display: grid; gap: 7px; color: var(--muted); font-size: 13px; font-weight: 700; }
     .calculator h2, .insights h2, .table-card h2 { margin: 0 0 14px; }
@@ -53,6 +58,12 @@
     .pill { display: inline-flex; border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 800; border: 1px solid var(--line); }
     .projected { color: var(--blue); background: rgba(92,200,255,.12); }
     .training { color: var(--gold); background: rgba(255,209,102,.1); }
+    .custom { color: var(--green); background: rgba(110,240,163,.1); }
+    .good { color: var(--green); } .bad { color: var(--red); }
+    .note { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .sr-only { position: absolute; left: -9999px; }
+    @media (max-width: 900px) { .hero, .insights { grid-template-columns: 1fr; } .controls { grid-template-columns: 1fr 1fr; } .grid-4, .entry-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) { .wrap { width: min(100% - 20px, 1240px); padding-top: 12px; } .hero-main, .hero-side, .controls, .calculator, .insights, .table-card { padding: 14px; border-radius: 18px; } .controls, .grid-4, .entry-grid { grid-template-columns: 1fr; } .calc-result { align-items: stretch; flex-direction: column; } .calc-actions { justify-content: stretch; } .calc-actions button { flex: 1; } .bar-row { grid-template-columns: 1fr; } th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5), th:nth-child(6), td:nth-child(6) { display: none; } }
     .good { color: var(--green); } .bad { color: var(--red); }
     .note { color: var(--muted); font-size: 13px; line-height: 1.55; }
     .sr-only { position: absolute; left: -9999px; }
@@ -78,6 +89,7 @@
 
     <section class="card controls" aria-label="Table controls">
       <input id="search" type="search" placeholder="Search players, sources, or statuses…" aria-label="Search players" />
+      <select id="classFilter" aria-label="Filter by class"><option value="all">All rows</option><option>2026 Projection</option><option>2025 Training</option><option>Custom Projection</option></select>
       <select id="classFilter" aria-label="Filter by class"><option value="all">All rows</option><option>2026 Projection</option><option>2025 Training</option></select>
       <select id="minFilter" aria-label="Filter by DBPM"><option value="all">Any prediction</option><option value="positive">Predicted DBPM ≥ 0</option><option value="top10">Top 10 projections</option></select>
       <button id="download" type="button">Download CSV</button>
@@ -85,12 +97,15 @@
 
     <section class="card calculator">
       <h2>Live prediction calculator</h2>
+      <div class="entry-grid">
+        <label>Player name<input id="playerName" type="text" value="Custom Prospect" /></label>
       <div class="grid-4">
         <label>Wingspan (in)<input id="wingspan" type="number" step="0.01" value="84.50" /></label>
         <label>Lane agility (sec)<input id="lane" type="number" step="0.01" value="11.00" /></label>
         <label>Shuttle run (sec)<input id="shuttle" type="number" step="0.01" value="2.90" /></label>
         <label>Hand width (in)<input id="hand" type="number" step="0.01" value="9.75" /></label>
       </div>
+      <div class="calc-result"><div><strong id="liveDbpm" class="mono"></strong><div class="note" id="liveContext"></div></div><div class="calc-actions"><button id="addCustom" type="button">Add to board</button><button class="secondary" id="resetCalc" type="button">Reset inputs</button></div></div>
       <div class="calc-result"><div><strong id="liveDbpm" class="mono"></strong><div class="note" id="liveContext"></div></div><button class="secondary" id="resetCalc" type="button">Reset inputs</button></div>
     </section>
 
@@ -124,6 +139,27 @@
     function predict(row) {
       if (![row.wingspan, row.lane, row.shuttle, row.hand].every(finite)) return null;
       return MODEL.intercept + MODEL.wingspan*row.wingspan + MODEL.lane*row.lane + MODEL.shuttle*row.shuttle + MODEL.hand*row.hand;
+    }
+    function rowId(row) { return row.id || `${row.class}:${row.player}`; }
+    function enrich(row) { return { ...row, id: rowId(row), predicted: predict(row) }; }
+    function loadPlayers() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(LS_KEY));
+        return Array.isArray(stored) ? stored.map(normalizePlayer) : structuredClone(SEED_PLAYERS);
+      }
+      catch { return structuredClone(SEED_PLAYERS); }
+    }
+    function nullableNumber(value) {
+      if (value === null || value === undefined || value === '') return null;
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : null;
+    }
+    function normalizePlayer(row) {
+      return {
+        player: row.player || 'Unnamed Prospect', class: row.class || 'Custom Projection', wingspan: nullableNumber(row.wingspan),
+        lane: nullableNumber(row.lane), shuttle: nullableNumber(row.shuttle), hand: nullableNumber(row.hand), actualDbpm: nullableNumber(row.actualDbpm),
+        minutes: nullableNumber(row.minutes), status: row.status || 'Custom input', source: row.source || 'Calculator entry', id: row.id
+      };
     }
     function enrich(row) { return { ...row, predicted: predict(row) }; }
     function loadPlayers() {
@@ -173,6 +209,19 @@
       $('head').querySelectorAll('th').forEach(th => th.addEventListener('click', () => { const key = th.dataset.key; sort = sort.key === key ? {key, dir: sort.dir === 'asc' ? 'desc' : 'asc'} : {key, dir: ['player','class','status'].includes(key) ? 'asc' : 'desc'}; renderTable(); }));
       $('body').innerHTML = rows.map(r => `<tr>
         <td><strong>${esc(r.player)}</strong><div class="note">${esc(r.source)}</div></td>
+        <td><span class="pill ${classPill(r.class)}">${esc(r.class)}</span></td>
+        <td class="mono ${r.predicted >= 0 ? 'good' : 'bad'}">${fmt(r.predicted)}</td>
+        <td class="mono">${fmt(r.actualDbpm)}</td><td class="mono">${fmt(r.wingspan)}</td><td class="mono">${fmt(r.lane)}</td>
+        <td class="mono">${fmt(r.shuttle)}</td><td class="mono">${fmt(r.hand)}</td><td>${esc(r.status)} ${r.class === 'Custom Projection' ? `<button class="danger" data-delete="${esc(r.id)}" type="button">Delete</button>` : ''}</td></tr>`).join('');
+      $('body').querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', () => deleteCustom(btn.dataset.delete)));
+      const total = players.length;
+      $('resultNote').textContent = `Showing ${rows.length} of ${total} rows. Click column headers to sort.`;
+    }
+    function classPill(value) {
+      if (value === '2026 Projection') return 'projected';
+      if (value === 'Custom Projection') return 'custom';
+      return 'training';
+    }
         <td><span class="pill ${r.class === '2026 Projection' ? 'projected' : 'training'}">${esc(r.class)}</span></td>
         <td class="mono ${r.predicted >= 0 ? 'good' : 'bad'}">${fmt(r.predicted)}</td>
         <td class="mono">${fmt(r.actualDbpm)}</td><td class="mono">${fmt(r.wingspan)}</td><td class="mono">${fmt(r.lane)}</td>
@@ -197,6 +246,21 @@
       const grid = [min, 0, max].filter((v,i,a)=>a.indexOf(v)===i);
       svg.innerHTML = `<rect width="100%" height="100%" rx="18" fill="#07111f"/><line x1="${x(min)}" y1="${y(min)}" x2="${x(max)}" y2="${y(max)}" stroke="#5cc8ff" stroke-dasharray="5 6" opacity=".45"/>${grid.map(v=>`<g><line x1="${x(v)}" x2="${x(v)}" y1="20" y2="${h-pad}" stroke="#22344f"/><line x1="${pad}" x2="${w-18}" y1="${y(v)}" y2="${y(v)}" stroke="#22344f"/><text x="${x(v)}" y="${h-12}" fill="#9fb1c7" font-size="11" text-anchor="middle">${v}</text><text x="8" y="${y(v)+4}" fill="#9fb1c7" font-size="11">${v}</text></g>`).join('')}${rows.map(r=>`<circle cx="${x(r.predicted)}" cy="${y(r.actualDbpm)}" r="5" fill="${r.actualDbpm >= r.predicted ? '#6ef0a3' : '#ff7a90'}" opacity=".82"><title>${esc(r.player)}: predicted ${fmt(r.predicted)}, actual ${fmt(r.actualDbpm)}</title></circle>`).join('')}<text x="${w/2}" y="${h-4}" fill="#cfe6ff" font-size="12" text-anchor="middle">Predicted DBPM</text><text x="14" y="${h/2}" fill="#cfe6ff" font-size="12" transform="rotate(-90 14 ${h/2})" text-anchor="middle">Actual DBPM</text>`;
     }
+    function addCustomPlayer() {
+      const row = normalizePlayer({
+        id: `custom:${Date.now()}:${Math.random().toString(36).slice(2)}`, player: $('playerName').value.trim() || 'Custom Prospect', class: 'Custom Projection',
+        wingspan: $('wingspan').value, lane: $('lane').value, shuttle: $('shuttle').value, hand: $('hand').value, status: 'Saved custom calculator row', source: 'Calculator entry'
+      });
+      if (predict(row) === null) { alert('Enter all four numeric measurements before adding a custom player.'); return; }
+      players.push(row);
+      savePlayers();
+      renderAll();
+    }
+    function deleteCustom(id) {
+      players = players.filter(row => rowId(row) !== id || row.class !== 'Custom Projection');
+      savePlayers();
+      renderAll();
+    }
     function downloadCsv() {
       const headers = ['Player','Class','Predicted_DBPM','Actual_DBPM','Wingspan_in','Lane_Agility_Time','Shuttle_Run','Hand_Width','Status'];
       const lines = filteredRows().map(r => [r.player,r.class,fmt(r.predicted),fmt(r.actualDbpm),fmt(r.wingspan),fmt(r.lane),fmt(r.shuttle),fmt(r.hand),r.status]);
@@ -206,6 +270,8 @@
     ['search','classFilter','minFilter'].forEach(id => $(id).addEventListener('input', renderTable));
     ['wingspan','lane','shuttle','hand'].forEach(id => $(id).addEventListener('input', renderCalculator));
     $('download').addEventListener('click', downloadCsv);
+    $('addCustom').addEventListener('click', addCustomPlayer);
+    $('resetCalc').addEventListener('click', () => { $('playerName').value='Custom Prospect'; $('wingspan').value='84.50'; $('lane').value='11.00'; $('shuttle').value='2.90'; $('hand').value='9.75'; renderCalculator(); });
     $('resetCalc').addEventListener('click', () => { $('wingspan').value='84.50'; $('lane').value='11.00'; $('shuttle').value='2.90'; $('hand').value='9.75'; renderCalculator(); });
     $('clearLocal').addEventListener('click', () => { localStorage.removeItem(LS_KEY); players = structuredClone(SEED_PLAYERS); savePlayers(); renderAll(); });
     window.addEventListener('resize', renderScatter);
