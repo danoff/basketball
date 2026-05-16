@@ -1,7 +1,7 @@
 # basketball
-this repo is for my basketball analytics projects, the first one is predicting DBPM from combine data. A draft readme is below that was made with help from LLMs.
+This repository is for my basketball analytics projects, the first one is predicting DBPM from combine data. A draft readme is below that was made with help from LLMs. Everyhing below is DRAFT as of now. If you have suggestions please email c@danoff.org
 
-# NBA Combine Rookie Defensive Model Data
+@# DRAFT NBA Combine Rookie Defensive Model Data
 
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](LICENSE)
 
