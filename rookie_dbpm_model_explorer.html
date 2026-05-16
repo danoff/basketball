@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rookie Defensive BPM Predictor</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111f; --panel: #0d1b2d; --panel-2: #122238; --line: #22344f;
+      --text: #edf5ff; --muted: #9fb1c7; --blue: #5cc8ff; --green: #6ef0a3;
+      --gold: #ffd166; --red: #ff7a90; --shadow: 0 20px 60px rgba(0,0,0,.28);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; background: radial-gradient(circle at top left, #18345a 0, transparent 34rem), linear-gradient(135deg, #06101e 0%, #0b1220 55%, #07111f 100%); color: var(--text); }
+    .wrap { width: min(1240px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 48px; }
+    .hero { display: grid; grid-template-columns: 1.5fr .9fr; gap: 18px; align-items: stretch; }
+    .card { background: rgba(13, 27, 45, .88); border: 1px solid rgba(92, 200, 255, .13); border-radius: 24px; box-shadow: var(--shadow); backdrop-filter: blur(14px); }
+    .hero-main { padding: 28px; position: relative; overflow: hidden; }
+    .hero-main:after { content: ""; position: absolute; inset: auto -90px -150px auto; width: 310px; height: 310px; border-radius: 50%; background: rgba(92,200,255,.12); filter: blur(2px); }
+    .eyebrow { display: inline-flex; gap: 8px; align-items: center; color: var(--blue); letter-spacing: .14em; text-transform: uppercase; font-size: 12px; font-weight: 800; }
+    h1 { margin: 12px 0 10px; font-size: clamp(2rem, 5vw, 4.5rem); line-height: .95; letter-spacing: -.06em; }
+    .lead { color: var(--muted); font-size: 1.05rem; max-width: 62rem; line-height: 1.6; }
+    code, .mono { font-family: "SFMono-Regular", Consolas, ui-monospace, monospace; }
+    .formula { margin-top: 20px; padding: 14px 16px; border-radius: 16px; background: #07111f; border: 1px solid var(--line); color: #d6ecff; overflow-x: auto; }
+    .hero-side { padding: 22px; display: grid; gap: 12px; }
+    .metric { padding: 16px; border-radius: 18px; background: rgba(18,34,56,.72); border: 1px solid var(--line); }
+    .metric span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; font-weight: 800; }
+    .metric strong { display: block; margin-top: 6px; font-size: 2rem; }
+    .controls, .calculator, .insights, .table-card { margin-top: 18px; padding: 18px; }
+    .controls { display: grid; grid-template-columns: 1fr auto auto auto; gap: 12px; align-items: center; }
+    input, select, button { font: inherit; }
+    input, select { width: 100%; border: 1px solid var(--line); background: #07111f; color: var(--text); border-radius: 14px; padding: 12px 13px; outline: none; }
+    input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(92,200,255,.15); }
+    button { border: 0; border-radius: 14px; padding: 12px 15px; color: #06101e; background: var(--blue); font-weight: 800; cursor: pointer; }
+    button.secondary { color: var(--text); background: #172941; border: 1px solid var(--line); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    label { display: grid; gap: 7px; color: var(--muted); font-size: 13px; font-weight: 700; }
+    .calculator h2, .insights h2, .table-card h2 { margin: 0 0 14px; }
+    .calc-result { display: flex; gap: 14px; align-items: center; justify-content: space-between; margin-top: 14px; padding: 16px; background: linear-gradient(90deg, rgba(92,200,255,.13), rgba(110,240,163,.08)); border: 1px solid var(--line); border-radius: 18px; }
+    .calc-result strong { font-size: 2.3rem; }
+    .insights { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .bar-list { display: grid; gap: 10px; }
+    .bar-row { display: grid; grid-template-columns: 160px 1fr 58px; gap: 10px; align-items: center; font-size: 13px; }
+    .bar-track { height: 12px; background: #07111f; border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+    .bar { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--green)); }
+    .scatter { width: 100%; min-height: 320px; background: #07111f; border: 1px solid var(--line); border-radius: 18px; }
+    .table-tools { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { color: #cfe6ff; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; user-select: none; }
+    tr:hover td { background: rgba(92,200,255,.06); }
+    .pill { display: inline-flex; border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 800; border: 1px solid var(--line); }
+    .projected { color: var(--blue); background: rgba(92,200,255,.12); }
+    .training { color: var(--gold); background: rgba(255,209,102,.1); }
+    .good { color: var(--green); } .bad { color: var(--red); }
+    .note { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .sr-only { position: absolute; left: -9999px; }
+    @media (max-width: 900px) { .hero, .insights { grid-template-columns: 1fr; } .controls { grid-template-columns: 1fr 1fr; } .grid-4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) { .wrap { width: min(100% - 20px, 1240px); padding-top: 12px; } .hero-main, .hero-side, .controls, .calculator, .insights, .table-card { padding: 14px; border-radius: 18px; } .controls, .grid-4 { grid-template-columns: 1fr; } .bar-row { grid-template-columns: 1fr; } th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5), th:nth-child(6), td:nth-child(6) { display: none; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="card hero-main">
+        <div class="eyebrow">🏀 Combine-only model explorer</div>
+        <h1>Predict rookie defensive BPM from pre-draft measurements.</h1>
+        <p class="lead">This single-page app turns the repository's exploratory DBPM model into an interactive board for 2026 prospects and 2025 training rows. It is meant for scouting context, not a complete player grade.</p>
+        <div class="formula mono" id="formulaText"></div>
+      </div>
+      <aside class="card hero-side" aria-label="Model fit summary">
+        <div class="metric"><span>Training n</span><strong id="metricN"></strong></div>
+        <div class="metric"><span>R² / Adjusted R²</span><strong id="metricR2"></strong></div>
+        <div class="metric"><span>RMSE</span><strong id="metricRmse"></strong></div>
+      </aside>
+    </section>
+
+    <section class="card controls" aria-label="Table controls">
+      <input id="search" type="search" placeholder="Search players, sources, or statuses…" aria-label="Search players" />
+      <select id="classFilter" aria-label="Filter by class"><option value="all">All rows</option><option>2026 Projection</option><option>2025 Training</option></select>
+      <select id="minFilter" aria-label="Filter by DBPM"><option value="all">Any prediction</option><option value="positive">Predicted DBPM ≥ 0</option><option value="top10">Top 10 projections</option></select>
+      <button id="download" type="button">Download CSV</button>
+    </section>
+
+    <section class="card calculator">
+      <h2>Live prediction calculator</h2>
+      <div class="grid-4">
+        <label>Wingspan (in)<input id="wingspan" type="number" step="0.01" value="84.50" /></label>
+        <label>Lane agility (sec)<input id="lane" type="number" step="0.01" value="11.00" /></label>
+        <label>Shuttle run (sec)<input id="shuttle" type="number" step="0.01" value="2.90" /></label>
+        <label>Hand width (in)<input id="hand" type="number" step="0.01" value="9.75" /></label>
+      </div>
+      <div class="calc-result"><div><strong id="liveDbpm" class="mono"></strong><div class="note" id="liveContext"></div></div><button class="secondary" id="resetCalc" type="button">Reset inputs</button></div>
+    </section>
+
+    <section class="insights">
+      <div class="card" style="padding:18px"><h2>Top 2026 projections</h2><div id="topBars" class="bar-list"></div></div>
+      <div class="card" style="padding:18px"><h2>2025 actual vs. predicted</h2><svg id="scatter" class="scatter" role="img" aria-label="Scatterplot of actual DBPM versus predicted DBPM"></svg><p class="note">Points above the diagonal outperformed this simple combine-only projection; points below it underperformed.</p></div>
+    </section>
+
+    <section class="card table-card">
+      <div class="table-tools"><div><h2>Model board</h2><p class="note" id="resultNote"></p></div><button class="secondary" id="clearLocal" type="button">Restore seed data</button></div>
+      <div style="overflow:auto"><table><thead><tr id="head"></tr></thead><tbody id="body"></tbody></table></div>
+    </section>
+  </main>
+
+  <script>
+    const MODEL = {"intercept":-8.895696,"wingspan":0.065647,"lane":0.638983,"shuttle":-3.392342,"hand":0.628937,"n":41,"r2":0.258,"adjR2":0.176,"aic":158.908,"rmse":1.487};
+    const SEED_PLAYERS = [{"player":"Ace Bailey","class":"2025 Training","wingspan":84.5,"lane":10.97,"shuttle":2.78,"hand":9.0,"actualDbpm":-2.5,"minutes":1988.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Asa Newell","class":"2025 Training","wingspan":83.25,"lane":10.95,"shuttle":2.78,"hand":10.0,"actualDbpm":-0.5,"minutes":500.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Carter Bryant","class":"2025 Training","wingspan":83.75,"lane":11.25,"shuttle":3.14,"hand":9.5,"actualDbpm":0.2,"minutes":818.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Cedric Coward","class":"2025 Training","wingspan":86.25,"lane":10.97,"shuttle":3.02,"hand":10.0,"actualDbpm":-0.6,"minutes":1598.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Chaz Lanier","class":"2025 Training","wingspan":81.0,"lane":10.53,"shuttle":2.96,"hand":9.75,"actualDbpm":-1.3,"minutes":262.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Collin Murray-Boyles","class":"2025 Training","wingspan":84.75,"lane":11.21,"shuttle":2.86,"hand":10.25,"actualDbpm":1.5,"minutes":1246.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Cooper Flagg","class":"2025 Training","wingspan":84.0,"lane":10.64,"shuttle":2.92,"hand":9.75,"actualDbpm":0.4,"minutes":2344.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Danny Wolf","class":"2025 Training","wingspan":86.25,"lane":11.26,"shuttle":2.91,"hand":9.75,"actualDbpm":-0.3,"minutes":1187.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Derik Queen","class":"2025 Training","wingspan":84.5,"lane":12.45,"shuttle":3.27,"hand":9.5,"actualDbpm":0.7,"minutes":2023.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Drake Powell","class":"2025 Training","wingspan":84.0,"lane":10.71,"shuttle":2.79,"hand":10.0,"actualDbpm":-1.3,"minutes":1320.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Dylan Harper","class":"2025 Training","wingspan":82.5,"lane":11.07,"shuttle":3.05,"hand":9.25,"actualDbpm":1.1,"minutes":1558.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Egor Demin","class":"2025 Training","wingspan":82.25,"lane":11.31,"shuttle":2.93,"hand":9.25,"actualDbpm":-0.7,"minutes":1308.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Grant Nelson","class":"2025 Training","wingspan":84.0,"lane":10.51,"shuttle":2.58,"hand":9.75,"actualDbpm":4.8,"minutes":35.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Hansen Yang","class":"2025 Training","wingspan":86.75,"lane":11.79,"shuttle":3.01,"hand":11.25,"actualDbpm":-0.6,"minutes":300.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Hunter Sallis","class":"2025 Training","wingspan":82.0,"lane":10.99,"shuttle":2.94,"hand":9.75,"actualDbpm":-2.9,"minutes":26.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Jamir Watkins","class":"2025 Training","wingspan":83.25,"lane":11.19,"shuttle":3.21,"hand":9.75,"actualDbpm":-0.5,"minutes":1032.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Jase Richardson","class":"2025 Training","wingspan":78.0,"lane":10.97,"shuttle":3.08,"hand":9.5,"actualDbpm":-0.7,"minutes":587.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Javon Small","class":"2025 Training","wingspan":76.75,"lane":10.74,"shuttle":2.87,"hand":9.75,"actualDbpm":-0.6,"minutes":830.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Jeremiah Fears","class":"2025 Training","wingspan":77.25,"lane":10.95,"shuttle":3.09,"hand":9.25,"actualDbpm":-1.3,"minutes":2112.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Joan Beringer","class":"2025 Training","wingspan":88.5,"lane":11.44,"shuttle":2.97,"hand":10.0,"actualDbpm":0.2,"minutes":314.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"John Tonje","class":"2025 Training","wingspan":81.0,"lane":11.14,"shuttle":3.21,"hand":9.5,"actualDbpm":1.2,"minutes":42.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Johni Broome","class":"2025 Training","wingspan":84.25,"lane":11.52,"shuttle":3.23,"hand":10.25,"actualDbpm":-4.4,"minutes":55.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Kam Jones","class":"2025 Training","wingspan":78.0,"lane":11.42,"shuttle":3.11,"hand":8.5,"actualDbpm":-1.9,"minutes":616.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Kasparas Jakucionis","class":"2025 Training","wingspan":79.75,"lane":10.99,"shuttle":2.82,"hand":9.75,"actualDbpm":0.6,"minutes":945.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Khaman Maluach","class":"2025 Training","wingspan":90.75,"lane":12.05,"shuttle":3.44,"hand":10.25,"actualDbpm":0.0,"minutes":411.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Koby Brea","class":"2025 Training","wingspan":77.25,"lane":11.4,"shuttle":3.23,"hand":9.25,"actualDbpm":-1.4,"minutes":84.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Kon Knueppel","class":"2025 Training","wingspan":78.25,"lane":11.92,"shuttle":2.92,"hand":9.75,"actualDbpm":-0.4,"minutes":2551.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Liam McNeeley","class":"2025 Training","wingspan":80.5,"lane":11.11,"shuttle":2.75,"hand":10.0,"actualDbpm":0.0,"minutes":368.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Maxime Raynaud","class":"2025 Training","wingspan":85.25,"lane":11.31,"shuttle":3.16,"hand":10.25,"actualDbpm":-1.6,"minutes":1964.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Nique Clifford","class":"2025 Training","wingspan":80.0,"lane":10.87,"shuttle":2.96,"hand":8.5,"actualDbpm":-1.2,"minutes":1882.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Rasheer Fleming","class":"2025 Training","wingspan":89.25,"lane":10.95,"shuttle":2.72,"hand":9.5,"actualDbpm":-0.7,"minutes":673.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Rocco Zikarsky","class":"2025 Training","wingspan":88.75,"lane":11.92,"shuttle":3.0,"hand":9.75,"actualDbpm":1.7,"minutes":36.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Ryan Kalkbrenner","class":"2025 Training","wingspan":90.0,"lane":12.05,"shuttle":3.1,"hand":11.25,"actualDbpm":1.3,"minutes":1479.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Sion James","class":"2025 Training","wingspan":78.5,"lane":10.91,"shuttle":2.93,"hand":9.25,"actualDbpm":1.1,"minutes":1843.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Tre Johnson","class":"2025 Training","wingspan":82.25,"lane":10.49,"shuttle":3.11,"hand":8.0,"actualDbpm":-2.9,"minutes":1443.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Tyrese Proctor","class":"2025 Training","wingspan":79.25,"lane":10.75,"shuttle":3.0,"hand":9.0,"actualDbpm":-0.5,"minutes":545.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"VJ Edgecombe","class":"2025 Training","wingspan":79.5,"lane":11.27,"shuttle":2.93,"hand":9.5,"actualDbpm":-0.1,"minutes":2623.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Vladislav Goldin","class":"2025 Training","wingspan":89.25,"lane":11.76,"shuttle":2.95,"hand":11.75,"actualDbpm":4.5,"minutes":24.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Walter Clayton Jr.","class":"2025 Training","wingspan":76.0,"lane":10.52,"shuttle":2.81,"hand":9.75,"actualDbpm":-2.1,"minutes":1410.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Will Riley","class":"2025 Training","wingspan":80.75,"lane":11.73,"shuttle":3.08,"hand":9.0,"actualDbpm":-2.6,"minutes":1633.0,"status":"Original 75 Invitee","source":"2025 model-building dataset"},{"player":"Yanic Konan Niederhauser","class":"2025 Training","wingspan":87.25,"lane":11.45,"shuttle":2.84,"hand":9.0,"actualDbpm":0.4,"minutes":424.0,"status":"Additional/StatLab Only","source":"2025 model-building dataset"},{"player":"Flory Bidunga","class":"2026 Projection","wingspan":87.25,"lane":11.24,"shuttle":2.78,"hand":10.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Reuben Chinyelu","class":"2026 Projection","wingspan":91.5,"lane":11.21,"shuttle":2.85,"hand":10.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Trevon Brazile","class":"2026 Projection","wingspan":87.75,"lane":10.84,"shuttle":2.71,"hand":10.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Karim Lopez","class":"2026 Projection","wingspan":83.5,"lane":11.14,"shuttle":2.88,"hand":11.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Tarris Reed Jr.","class":"2026 Projection","wingspan":88.25,"lane":11.03,"shuttle":2.77,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Baba Miller","class":"2026 Projection","wingspan":85.75,"lane":10.71,"shuttle":2.7,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Aaron Nkrumah","class":"2026 Projection","wingspan":82.25,"lane":11.18,"shuttle":2.48,"hand":8.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Zuby Ejiofor","class":"2026 Projection","wingspan":86.0,"lane":11.05,"shuttle":2.76,"hand":9.75,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Yaxel Lendeborg","class":"2026 Projection","wingspan":87.25,"lane":10.82,"shuttle":2.8,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Matthew Able","class":"2026 Projection","wingspan":80.25,"lane":11.08,"shuttle":2.86,"hand":10.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Hannes Steinbach","class":"2026 Projection","wingspan":86.25,"lane":10.9,"shuttle":2.89,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Christopher Cenac Jr.","class":"2026 Projection","wingspan":89.0,"lane":10.76,"shuttle":2.84,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Nathaniel Ament","class":"2026 Projection","wingspan":83.5,"lane":11.27,"shuttle":2.85,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Izaiyah Nelson","class":"2026 Projection","wingspan":86.5,"lane":11.22,"shuttle":2.9,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Morez Johnson","class":"2026 Projection","wingspan":87.5,"lane":10.59,"shuttle":2.91,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Joshua Jefferson","class":"2026 Projection","wingspan":82.75,"lane":11.91,"shuttle":3.08,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Henri Veesaar","class":"2026 Projection","wingspan":86.0,"lane":11.2,"shuttle":2.92,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Tyler Nickel","class":"2026 Projection","wingspan":80.5,"lane":10.88,"shuttle":2.85,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Jacob Cofie","class":"2026 Projection","wingspan":84.0,"lane":11.3,"shuttle":2.92,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Tounde Yessoufou","class":"2026 Projection","wingspan":82.0,"lane":11.09,"shuttle":2.75,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Ugonna Onyenso","class":"2026 Projection","wingspan":88.75,"lane":11.56,"shuttle":3.16,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Nick Martinelli","class":"2026 Projection","wingspan":82.0,"lane":11.01,"shuttle":2.88,"hand":9.75,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Andrej Stojakovic","class":"2026 Projection","wingspan":80.25,"lane":10.97,"shuttle":2.89,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Isaiah Evans","class":"2026 Projection","wingspan":80.75,"lane":11.87,"shuttle":2.89,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Dillon Mitchell","class":"2026 Projection","wingspan":82.5,"lane":10.94,"shuttle":2.89,"hand":9.75,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Otega Oweh","class":"2026 Projection","wingspan":80.25,"lane":11.2,"shuttle":2.86,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Tobe Awaka","class":"2026 Projection","wingspan":86.25,"lane":10.94,"shuttle":3.02,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Cameron Boozer","class":"2026 Projection","wingspan":85.5,"lane":11.06,"shuttle":2.99,"hand":9.75,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Rafael Castro","class":"2026 Projection","wingspan":85.25,"lane":11.42,"shuttle":2.93,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Kingston Flemings","class":"2026 Projection","wingspan":75.5,"lane":10.61,"shuttle":2.69,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Bennett Stirtz","class":"2026 Projection","wingspan":78.0,"lane":11.25,"shuttle":2.91,"hand":9.75,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Cameron Carr","class":"2026 Projection","wingspan":84.75,"lane":10.46,"shuttle":2.8,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Bryce Hopkins","class":"2026 Projection","wingspan":82.5,"lane":10.71,"shuttle":2.95,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Milan Momcilovic","class":"2026 Projection","wingspan":81.25,"lane":11.22,"shuttle":2.95,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Trey Kaufman-Renn","class":"2026 Projection","wingspan":82.5,"lane":11.06,"shuttle":3.01,"hand":9.75,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Alex Karaban","class":"2026 Projection","wingspan":83.0,"lane":11.19,"shuttle":3.01,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Tyler Tanner","class":"2026 Projection","wingspan":76.25,"lane":10.88,"shuttle":2.92,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Darryn Peterson","class":"2026 Projection","wingspan":81.75,"lane":11.17,"shuttle":2.95,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Malachi Moreno","class":"2026 Projection","wingspan":85.5,"lane":11.62,"shuttle":3.11,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Caleb Wilson","class":"2026 Projection","wingspan":84.25,"lane":11.17,"shuttle":3.11,"hand":9.75,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Allen Graves","class":"2026 Projection","wingspan":84.0,"lane":11.76,"shuttle":3.18,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Felix Okpara","class":"2026 Projection","wingspan":86.0,"lane":11.01,"shuttle":2.99,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Christopher Brown Jr","class":"2026 Projection","wingspan":79.5,"lane":10.57,"shuttle":2.89,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Keyshawn Hall","class":"2026 Projection","wingspan":82.25,"lane":11.15,"shuttle":3.1,"hand":9.75,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Anicet Dybantsa","class":"2026 Projection","wingspan":84.5,"lane":11.06,"shuttle":2.99,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Ja'Kobi Gillespie","class":"2026 Projection","wingspan":76.0,"lane":10.94,"shuttle":2.91,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Darius Acuff Jr.","class":"2026 Projection","wingspan":78.5,"lane":10.99,"shuttle":2.93,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Maliq Brown","class":"2026 Projection","wingspan":84.75,"lane":11.22,"shuttle":3.05,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Billy Richmond III","class":"2026 Projection","wingspan":80.0,"lane":10.23,"shuttle":2.82,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Ryan Conwell","class":"2026 Projection","wingspan":79.0,"lane":10.69,"shuttle":2.86,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Amari Allen","class":"2026 Projection","wingspan":80.0,"lane":10.72,"shuttle":2.94,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Dailyn Swain","class":"2026 Projection","wingspan":82.0,"lane":11.25,"shuttle":3.08,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Bruce Thornton","class":"2026 Projection","wingspan":77.0,"lane":11.55,"shuttle":3.01,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Ebuka Okorie","class":"2026 Projection","wingspan":79.75,"lane":10.71,"shuttle":2.96,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Keaton Wagler","class":"2026 Projection","wingspan":78.25,"lane":11.05,"shuttle":3.0,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Milos Uzan","class":"2026 Projection","wingspan":77.0,"lane":10.7,"shuttle":2.87,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Aday Mara","class":"2026 Projection","wingspan":90.0,"lane":11.47,"shuttle":3.36,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Brayden Burries","class":"2026 Projection","wingspan":78.0,"lane":10.59,"shuttle":2.92,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Tobi Lawal","class":"2026 Projection","wingspan":82.5,"lane":11.15,"shuttle":3.08,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Christian Anderson","class":"2026 Projection","wingspan":78.25,"lane":10.85,"shuttle":2.85,"hand":8.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"John Blackwell","class":"2026 Projection","wingspan":74.25,"lane":11.23,"shuttle":3.08,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Labaron Philon","class":"2026 Projection","wingspan":78.25,"lane":11.55,"shuttle":3.13,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Kylan Boswell","class":"2026 Projection","wingspan":79.0,"lane":10.82,"shuttle":2.92,"hand":8.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Emanuel Sharp","class":"2026 Projection","wingspan":75.0,"lane":10.77,"shuttle":2.8,"hand":8.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Peter Suder","class":"2026 Projection","wingspan":80.0,"lane":11.23,"shuttle":3.14,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Koa Peat","class":"2026 Projection","wingspan":83.25,"lane":11.0,"shuttle":3.39,"hand":10.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Braden Smith","class":"2026 Projection","wingspan":75.25,"lane":10.76,"shuttle":2.87,"hand":8.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Jaden Bradley","class":"2026 Projection","wingspan":78.25,"lane":10.75,"shuttle":3.13,"hand":9.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Meleek Thomas","class":"2026 Projection","wingspan":78.75,"lane":11.57,"shuttle":2.97,"hand":7.5,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Jeremy Fears Jr.","class":"2026 Projection","wingspan":76.0,"lane":10.62,"shuttle":3.1,"hand":9.0,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Nicholas Boyd","class":"2026 Projection","wingspan":74.5,"lane":10.78,"shuttle":3.06,"hand":8.25,"actualDbpm":null,"minutes":null,"status":"Projection input","source":"2026 prediction dataset"},{"player":"Jayden Quaintance","class":"2026 Projection","wingspan":89.25,"lane":null,"shuttle":null,"hand":11.0,"actualDbpm":null,"minutes":null,"status":"Missing input","source":"2026 prediction dataset"},{"player":"Luigi Suigo","class":"2026 Projection","wingspan":89.5,"lane":null,"shuttle":null,"hand":10.5,"actualDbpm":null,"minutes":null,"status":"Missing input","source":"2026 prediction dataset"},{"player":"Richie Saunders","class":"2026 Projection","wingspan":80.75,"lane":null,"shuttle":null,"hand":10.25,"actualDbpm":null,"minutes":null,"status":"Missing input","source":"2026 prediction dataset"},{"player":"Tyler Bilodeau","class":"2026 Projection","wingspan":84.75,"lane":null,"shuttle":null,"hand":9.5,"actualDbpm":null,"minutes":null,"status":"Missing input","source":"2026 prediction dataset"}];
+    const LS_KEY = 'rookie-dbpm-single-page-app-v1';
+    const columns = [
+      ['player','Player'], ['class','Class'], ['predicted','Pred DBPM'], ['actualDbpm','Actual DBPM'],
+      ['wingspan','Wingspan'], ['lane','Lane'], ['shuttle','Shuttle'], ['hand','Hand'], ['status','Status']
+    ];
+    let players = loadPlayers();
+    let sort = { key: 'predicted', dir: 'desc' };
+
+    const $ = id => document.getElementById(id);
+    const finite = v => Number.isFinite(Number(v));
+    const fmt = (v, digits=2) => v === null || v === undefined || Number.isNaN(v) ? '—' : Number(v).toFixed(digits);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    function predict(row) {
+      if (![row.wingspan, row.lane, row.shuttle, row.hand].every(finite)) return null;
+      return MODEL.intercept + MODEL.wingspan*row.wingspan + MODEL.lane*row.lane + MODEL.shuttle*row.shuttle + MODEL.hand*row.hand;
+    }
+    function enrich(row) { return { ...row, predicted: predict(row) }; }
+    function loadPlayers() {
+      try { return JSON.parse(localStorage.getItem(LS_KEY)) || structuredClone(SEED_PLAYERS); }
+      catch { return structuredClone(SEED_PLAYERS); }
+    }
+    function savePlayers() { localStorage.setItem(LS_KEY, JSON.stringify(players)); }
+    function filteredRows() {
+      const q = $('search').value.trim().toLowerCase();
+      const classFilter = $('classFilter').value;
+      const minFilter = $('minFilter').value;
+      let rows = players.map(enrich);
+      if (q) rows = rows.filter(r => [r.player, r.class, r.status, r.source].some(v => String(v).toLowerCase().includes(q)));
+      if (classFilter !== 'all') rows = rows.filter(r => r.class === classFilter);
+      if (minFilter === 'positive') rows = rows.filter(r => r.predicted >= 0);
+      rows.sort((a,b) => compare(a,b,sort.key,sort.dir));
+      if (minFilter === 'top10') rows = rows.filter(r => r.class === '2026 Projection').slice(0,10);
+      return rows;
+    }
+    function compare(a,b,key,dir) {
+      const av = a[key], bv = b[key];
+      const mod = dir === 'asc' ? 1 : -1;
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (typeof av === 'number' && typeof bv === 'number') return (av-bv)*mod;
+      return String(av).localeCompare(String(bv))*mod;
+    }
+    function renderAll() { renderChrome(); renderCalculator(); renderTable(); renderBars(); renderScatter(); }
+    function renderChrome() {
+      $('formulaText').textContent = `DBPM = ${MODEL.intercept.toFixed(6)} + ${MODEL.wingspan.toFixed(6)}×Wingspan_in + ${MODEL.lane.toFixed(6)}×Lane_Agility_Time ${MODEL.shuttle.toFixed(6)}×Shuttle_Run + ${MODEL.hand.toFixed(6)}×Hand_Width`;
+      $('metricN').textContent = MODEL.n;
+      $('metricR2').textContent = `${MODEL.r2.toFixed(3)} / ${MODEL.adjR2.toFixed(3)}`;
+      $('metricRmse').textContent = MODEL.rmse.toFixed(3);
+    }
+    function renderCalculator() {
+      const row = { wingspan:+$('wingspan').value, lane:+$('lane').value, shuttle:+$('shuttle').value, hand:+$('hand').value };
+      const pred = predict(row);
+      $('liveDbpm').textContent = fmt(pred);
+      const all = players.map(enrich).filter(r => r.class === '2026 Projection' && r.predicted !== null).sort((a,b)=>b.predicted-a.predicted);
+      const better = all.filter(r => r.predicted > pred).length;
+      $('liveContext').textContent = pred === null ? 'Enter all four numeric measurements.' : `This would rank around #${better+1} among the ${all.length} loaded 2026 projection rows.`;
+    }
+    function renderTable() {
+      const rows = filteredRows();
+      $('head').innerHTML = columns.map(([key,label]) => `<th data-key="${key}">${label} ${sort.key===key ? (sort.dir==='asc'?'▲':'▼') : ''}</th>`).join('');
+      $('head').querySelectorAll('th').forEach(th => th.addEventListener('click', () => { const key = th.dataset.key; sort = sort.key === key ? {key, dir: sort.dir === 'asc' ? 'desc' : 'asc'} : {key, dir: ['player','class','status'].includes(key) ? 'asc' : 'desc'}; renderTable(); }));
+      $('body').innerHTML = rows.map(r => `<tr>
+        <td><strong>${esc(r.player)}</strong><div class="note">${esc(r.source)}</div></td>
+        <td><span class="pill ${r.class === '2026 Projection' ? 'projected' : 'training'}">${esc(r.class)}</span></td>
+        <td class="mono ${r.predicted >= 0 ? 'good' : 'bad'}">${fmt(r.predicted)}</td>
+        <td class="mono">${fmt(r.actualDbpm)}</td><td class="mono">${fmt(r.wingspan)}</td><td class="mono">${fmt(r.lane)}</td>
+        <td class="mono">${fmt(r.shuttle)}</td><td class="mono">${fmt(r.hand)}</td><td>${esc(r.status)}</td></tr>`).join('');
+      const total = players.length;
+      $('resultNote').textContent = `Showing ${rows.length} of ${total} rows. Click column headers to sort.`;
+    }
+    function renderBars() {
+      const top = players.map(enrich).filter(r => r.class === '2026 Projection' && r.predicted !== null).sort((a,b)=>b.predicted-a.predicted).slice(0,10);
+      const max = Math.max(...top.map(r=>r.predicted));
+      const min = Math.min(...top.map(r=>r.predicted));
+      $('topBars').innerHTML = top.map((r,i) => { const pct = ((r.predicted - min) / Math.max(.01, max-min))*72 + 24; return `<div class="bar-row"><strong>${i+1}. ${esc(r.player)}</strong><div class="bar-track"><div class="bar" style="width:${pct}%"></div></div><span class="mono">${fmt(r.predicted)}</span></div>`; }).join('');
+    }
+    function renderScatter() {
+      const svg = $('scatter'), w = svg.clientWidth || 520, h = 320, pad = 38;
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      const rows = players.map(enrich).filter(r => r.class === '2025 Training' && r.predicted !== null && r.actualDbpm !== null);
+      const vals = rows.flatMap(r => [r.predicted, r.actualDbpm]);
+      const min = Math.floor(Math.min(...vals)-.5), max = Math.ceil(Math.max(...vals)+.5);
+      const x = v => pad + (v-min)/(max-min)*(w-pad*1.5);
+      const y = v => h-pad - (v-min)/(max-min)*(h-pad*1.6);
+      const grid = [min, 0, max].filter((v,i,a)=>a.indexOf(v)===i);
+      svg.innerHTML = `<rect width="100%" height="100%" rx="18" fill="#07111f"/><line x1="${x(min)}" y1="${y(min)}" x2="${x(max)}" y2="${y(max)}" stroke="#5cc8ff" stroke-dasharray="5 6" opacity=".45"/>${grid.map(v=>`<g><line x1="${x(v)}" x2="${x(v)}" y1="20" y2="${h-pad}" stroke="#22344f"/><line x1="${pad}" x2="${w-18}" y1="${y(v)}" y2="${y(v)}" stroke="#22344f"/><text x="${x(v)}" y="${h-12}" fill="#9fb1c7" font-size="11" text-anchor="middle">${v}</text><text x="8" y="${y(v)+4}" fill="#9fb1c7" font-size="11">${v}</text></g>`).join('')}${rows.map(r=>`<circle cx="${x(r.predicted)}" cy="${y(r.actualDbpm)}" r="5" fill="${r.actualDbpm >= r.predicted ? '#6ef0a3' : '#ff7a90'}" opacity=".82"><title>${esc(r.player)}: predicted ${fmt(r.predicted)}, actual ${fmt(r.actualDbpm)}</title></circle>`).join('')}<text x="${w/2}" y="${h-4}" fill="#cfe6ff" font-size="12" text-anchor="middle">Predicted DBPM</text><text x="14" y="${h/2}" fill="#cfe6ff" font-size="12" transform="rotate(-90 14 ${h/2})" text-anchor="middle">Actual DBPM</text>`;
+    }
+    function downloadCsv() {
+      const headers = ['Player','Class','Predicted_DBPM','Actual_DBPM','Wingspan_in','Lane_Agility_Time','Shuttle_Run','Hand_Width','Status'];
+      const lines = filteredRows().map(r => [r.player,r.class,fmt(r.predicted),fmt(r.actualDbpm),fmt(r.wingspan),fmt(r.lane),fmt(r.shuttle),fmt(r.hand),r.status]);
+      const csv = [headers, ...lines].map(row => row.map(v => `"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = 'rookie-dbpm-model-board.csv'; a.click(); URL.revokeObjectURL(a.href);
+    }
+    ['search','classFilter','minFilter'].forEach(id => $(id).addEventListener('input', renderTable));
+    ['wingspan','lane','shuttle','hand'].forEach(id => $(id).addEventListener('input', renderCalculator));
+    $('download').addEventListener('click', downloadCsv);
+    $('resetCalc').addEventListener('click', () => { $('wingspan').value='84.50'; $('lane').value='11.00'; $('shuttle').value='2.90'; $('hand').value='9.75'; renderCalculator(); });
+    $('clearLocal').addEventListener('click', () => { localStorage.removeItem(LS_KEY); players = structuredClone(SEED_PLAYERS); savePlayers(); renderAll(); });
+    window.addEventListener('resize', renderScatter);
+    renderAll(); savePlayers();
+  </script>
+</body>
+</html>
