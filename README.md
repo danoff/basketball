@@ -275,7 +275,30 @@ This does not prove the model is correct, but it suggests that the model’s top
 
 ---
 
-## Interactive Predictor Tool
+## Interactive Predictor Tool Approach A (DeepSeek and Meta AI)
+
+**Live demo — May 16, 2026**
+
+- **GitHub view:** [20260516 meta ai and deepseek HTML draft.html](https://github.com/danoff/basketball/blob/main/20260516%20meta%20ai%20and%20deepseek%20HTML%20draft.html)
+- **Raw HTML:** https://raw.githubusercontent.com/danoff/basketball/main/20260516%20meta%20ai%20and%20deepseek%20HTML%20draft.html
+- **GitHub Pages (after enabling Pages):** https://danoff.github.io/basketball/20260516%20meta%20ai%20and%20deepseek%20HTML%20draft.html
+
+The app is a mobile-first, single-page tool that runs entirely in the browser:
+
+- shows the preferred model in the header
+- loads the 2026 prediction dataset (75 players, 71 with full inputs)
+- calculates Predicted DBPM live: `DBPM = -8.896 + 0.066×Wingspan + 0.639×Lane_Agility - 3.392×Shuttle + 0.629×Hand_Width`
+- searchable / sortable leaderboard (desktop table, mobile cards)
+- **CSV Import** — drop in your updated 2026 file
+- **Inline Editor** — add/edit players, live recalculation
+- **Export CSV** — download filtered view
+- **Persistence** — saves to localStorage
+- **Gem detection** — flags players with projection rank >30 and Predicted DBPM > median
+- dark slate UI built with Tailwind
+
+
+## Interactive Predictor Tool Approach B
+
 
 A mobile-friendly single-page web app is planned for this project.
 
@@ -319,6 +342,9 @@ The tool should be mobile-first and suitable for sharing by link or QR code.
 
 ---
 
+
+
+
 ## LLM Collaboration Note
 
 This project was developed through an interactive multi-LLM workflow.
@@ -329,6 +355,7 @@ Contributions included:
 - **Microsoft Copilot in the browser**: dataset audits, Mode B audit checks, README revision suggestions, and validation notes.
 - **DeepSeek in the browser**: model exploration notes, final model framing, and interactive predictor concept refinements.
 - Additional LLM outputs may be added as separate notes or audits over time.
+- **Meta AI (Muse Spark) in the Meta AI app**: built the production HTML predictor (May 16, 2026 draft), integrated both 2025 and 2026 CSVs as seed data, implemented the 4-variable DBPM formula with live recalculation, added CSV import/export, inline add-edit-delete with localStorage persistence, responsive desktop table and mobile card views, gem logic, median tracking, and stats bar; generated the QR code asset and prepared the file for GitHub Pages deployment.
 
 The goal is not to hide the multi-agent workflow. The goal is to make it inspectable.
 
@@ -449,6 +476,14 @@ The repository license covers code, scripts, documentation, and original project
 ---
 
 ## Generated / Updated
+
+README updated with:
+- ChatGPT 5.5 in the web browser
+- Microsoft Copilot in the browser
+- DeepSeek in the browser
+- Meta AI (Muse Spark) in the Meta AI app
+
+Date: 2026-05-16 09:45 CDT
 
 README updated with:
 
