@@ -18,6 +18,17 @@ The current preferred model uses DBPM as the dependent variable because DBPM beh
 
 ---
 
+
+## Single-page web app
+
+This repo now includes a browser-only model explorer in `rookie_dbpm_model_explorer.html`. Open it directly in a browser or serve the repo locally:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then visit `http://localhost:8000/rookie_dbpm_model_explorer.html`. The app embeds the current 2025 preferred-model complete rows and 2026 prediction rows, recalculates predictions with the preferred DBPM coefficients, supports search/filter/sort, includes a live custom-player calculator, and can export the current board as CSV.
+
 ## Research Question
 
 **Can pre-draft physical and athletic measurements help predict rookie defensive value?**
