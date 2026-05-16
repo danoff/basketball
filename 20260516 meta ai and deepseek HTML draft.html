@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DBPM Rookie Model Explorer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+    <!-- Header -->
+    <header class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-xl shadow-black/20">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold tracking-tight">
+            Defensive BPM <span class="text-sky-400">Rookie Predictor</span>
+          </h1>
+          <p class="mt-2 text-slate-300 text-sm md:text-base">
+            Model:
+            <span class="mono bg-slate-800/70 border border-slate-700 px-2 py-1 rounded-lg ml-1 inline-block">
+              DBPM = -8.896 + 0.066×Wingspan_in + 0.639×Lane_Agility_Time - 3.392×Shuttle_Run + 0.629×Hand_Width
+            </span>
+          </p>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300">Dark • Slate</span>
+          <span class="px-2.5 py-1 rounded-full bg-sky-950 border border-sky-800 text-sky-300">Live Predictions</span>
+          <span class="px-2.5 py-1 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-300">💎 Gems</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Control Bar -->
+    <section class="mt-4 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+      <div class="flex flex-col xl:flex-row gap-3 xl:items-center xl:justify-between">
+        <div class="flex flex-wrap gap-2">
+          <button id="addBtn" class="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 active:bg-sky-700 transition text-sm font-medium shadow">
+            + Add Player
+          </button>
+          <label class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition text-sm font-medium cursor-pointer">
+            Import CSV
+            <input id="importInput" type="file" accept=".csv,text/csv" class="hidden" />
+          </label>
+          <button id="exportBtn" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition text-sm font-medium">
+            Export CSV
+          </button>
+          <button id="resetBtn" class="px-3 py-2 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-200 transition text-sm font-medium">
+            Reset Data
+          </button>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div class="relative">
+            <input id="searchInput" type="search" placeholder="Search players..." class="w-full sm:w-64 bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 placeholder-slate-500" />
+            <svg class="absolute left-3 top-2.5 h-4 w-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+          </div>
+          <label class="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm cursor-pointer select-none">
+            <input id="gemToggle" type="checkbox" class="accent-emerald-500 h-4 w-4" />
+            <span>Gem Only 💎</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats Bar -->
+    <section class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div class="text-slate-400 text-xs uppercase tracking-wide">Total Players</div>
+        <div id="statTotal" class="mono text-2xl font-semibold mt-1">0</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div class="text-slate-400 text-xs uppercase tracking-wide">Visible</div>
+        <div id="statVisible" class="mono text-2xl font-semibold mt-1">0</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div class="text-slate-400 text-xs uppercase tracking-wide">Gems 💎</div>
+        <div id="statGems" class="mono text-2xl font-semibold mt-1 text-emerald-400">0</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+        <div class="text-slate-400 text-xs uppercase tracking-wide">Median Pred DBPM</div>
+        <div id="statMedian" class="mono text-2xl font-semibold mt-1">—</div>
+      </div>
+    </section>
+
+    <!-- Editor Panel -->
+    <section id="editorPanel" class="mt-4 bg-slate-900 border border-slate-800 rounded-2xl p-5 hidden">
+      <div class="flex items-start justify-between gap-4">
+        <h2 class="text-lg font-semibold">Player Editor</h2>
+        <button id="closeEditor" class="text-slate-400 hover:text-slate-200">✕</button>
+      </div>
+      <form id="playerForm" class="mt-4 grid grid-cols-1 md:grid-cols-12 gap-3">
+        <div class="md:col-span-4">
+          <label class="block text-xs text-slate-400 mb-1">Player Name</label>
+          <input name="name" required placeholder="e.g., Victor Wembanyama" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs text-slate-400 mb-1">Wingspan (in)</label>
+          <input name="wingspan" type="number" step="0.01" placeholder="84.5" class="w-full mono bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs text-slate-400 mb-1">Lane Agility (s)</label>
+          <input name="laneAgility" type="number" step="0.01" placeholder="11.2" class="w-full mono bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs text-slate-400 mb-1">Shuttle Run (s)</label>
+          <input name="shuttleRun" type="number" step="0.01" placeholder="3.10" class="w-full mono bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs text-slate-400 mb-1">Hand Width (in)</label>
+          <input name="handWidth" type="number" step="0.01" placeholder="10.25" class="w-full mono bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600" />
+        </div>
+        <div class="md:col-span-4">
+          <label class="block text-xs text-slate-400 mb-1">Projection</label>
+          <select name="projection" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600">
+            <option>Top 10</option>
+            <option>Mid 1st</option>
+            <option>Late 1st</option>
+            <option>2nd Round</option>
+            <option>UDFA</option>
+            <option selected>2025 Rookie</option>
+            <option>Unknown</option>
+          </select>
+        </div>
+        <div class="md:col-span-3">
+          <label class="block text-xs text-slate-400 mb-1">Actual DBPM (optional)</label>
+          <input name="actualDBPM" type="number" step="0.01" placeholder="-0.5" class="w-full mono bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600" />
+        </div>
+        <div class="md:col-span-5 flex items-end gap-2">
+          <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+            <div class="text-[11px] uppercase tracking-wide text-slate-400">Live Predicted DBPM</div>
+            <div id="livePred" class="mono text-lg font-semibold">—</div>
+          </div>
+          <button type="submit" id="saveBtn" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-sm font-semibold shadow">Add Player</button>
+          <button type="button" id="cancelBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-medium">Cancel</button>
+          <button type="button" id="deleteBtn" class="px-4 py-2 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-200 text-sm font-medium hidden">Delete</button>
+        </div>
+      </form>
+      <p class="mt-3 text-xs text-slate-500">All measurements must be numeric to compute prediction. Empty fields yield no prediction.</p>
+    </section>
+
+    <!-- Desktop Table -->
+    <section class="mt-4 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hidden md:block">
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-950/70 backdrop-blur border-b border-slate-800">
+            <tr id="theadRow" class="text-left text-slate-300">
+              <!-- headers injected -->
+            </tr>
+          </thead>
+          <tbody id="tbody" class="divide-y divide-slate-800">
+            <!-- rows injected -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Mobile Cards -->
+    <section id="mobileCards" class="mt-4 grid grid-cols-1 gap-3 md:hidden">
+      <!-- cards injected -->
+    </section>
+
+    <footer class="mt-8 text-center text-xs text-slate-600 pb-8">
+      Built with Tailwind • LocalStorage persists data • Formula shows in header
+    </footer>
+  </div>
+
+  <script>
+  // ======== SEED DATA INJECTION POINT ========
+  const SEED_DATA = [
+  {
+    "Player": "Flory Bidunga",
+    "Wingspan_in": 87.25,
+    "Lane_Agility_Time": 11.24,
+    "Shuttle_Run": 2.78,
+    "Hand_Width": 10.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Reuben Chinyelu",
+    "Wingspan_in": 91.5,
+    "Lane_Agility_Time": 11.21,
+    "Shuttle_Run": 2.85,
+    "Hand_Width": 10.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Trevon Brazile",
+    "Wingspan_in": 87.75,
+    "Lane_Agility_Time": 10.84,
+    "Shuttle_Run": 2.71,
+    "Hand_Width": 10.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Karim Lopez",
+    "Wingspan_in": 83.5,
+    "Lane_Agility_Time": 11.14,
+    "Shuttle_Run": 2.88,
+    "Hand_Width": 11.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Tarris Reed Jr.",
+    "Wingspan_in": 88.25,
+    "Lane_Agility_Time": 11.03,
+    "Shuttle_Run": 2.77,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Baba Miller",
+    "Wingspan_in": 85.75,
+    "Lane_Agility_Time": 10.71,
+    "Shuttle_Run": 2.7,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Aaron Nkrumah",
+    "Wingspan_in": 82.25,
+    "Lane_Agility_Time": 11.18,
+    "Shuttle_Run": 2.48,
+    "Hand_Width": 8.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Zuby Ejiofor",
+    "Wingspan_in": 86.0,
+    "Lane_Agility_Time": 11.05,
+    "Shuttle_Run": 2.76,
+    "Hand_Width": 9.75,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Yaxel Lendeborg",
+    "Wingspan_in": 87.25,
+    "Lane_Agility_Time": 10.82,
+    "Shuttle_Run": 2.8,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Matthew Able",
+    "Wingspan_in": 80.25,
+    "Lane_Agility_Time": 11.08,
+    "Shuttle_Run": 2.86,
+    "Hand_Width": 10.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Hannes Steinbach",
+    "Wingspan_in": 86.25,
+    "Lane_Agility_Time": 10.9,
+    "Shuttle_Run": 2.89,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Christopher Cenac Jr.",
+    "Wingspan_in": 89.0,
+    "Lane_Agility_Time": 10.76,
+    "Shuttle_Run": 2.84,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Nathaniel Ament",
+    "Wingspan_in": 83.5,
+    "Lane_Agility_Time": 11.27,
+    "Shuttle_Run": 2.85,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Izaiyah Nelson",
+    "Wingspan_in": 86.5,
+    "Lane_Agility_Time": 11.22,
+    "Shuttle_Run": 2.9,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Morez Johnson",
+    "Wingspan_in": 87.5,
+    "Lane_Agility_Time": 10.59,
+    "Shuttle_Run": 2.91,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Joshua Jefferson",
+    "Wingspan_in": 82.75,
+    "Lane_Agility_Time": 11.91,
+    "Shuttle_Run": 3.08,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Henri Veesaar",
+    "Wingspan_in": 86.0,
+    "Lane_Agility_Time": 11.2,
+    "Shuttle_Run": 2.92,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Tyler Nickel",
+    "Wingspan_in": 80.5,
+    "Lane_Agility_Time": 10.88,
+    "Shuttle_Run": 2.85,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Jacob Cofie",
+    "Wingspan_in": 84.0,
+    "Lane_Agility_Time": 11.3,
+    "Shuttle_Run": 2.92,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Tounde Yessoufou",
+    "Wingspan_in": 82.0,
+    "Lane_Agility_Time": 11.09,
+    "Shuttle_Run": 2.75,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Ugonna Onyenso",
+    "Wingspan_in": 88.75,
+    "Lane_Agility_Time": 11.56,
+    "Shuttle_Run": 3.16,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Nick Martinelli",
+    "Wingspan_in": 82.0,
+    "Lane_Agility_Time": 11.01,
+    "Shuttle_Run": 2.88,
+    "Hand_Width": 9.75,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Andrej Stojakovic",
+    "Wingspan_in": 80.25,
+    "Lane_Agility_Time": 10.97,
+    "Shuttle_Run": 2.89,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Isaiah Evans",
+    "Wingspan_in": 80.75,
+    "Lane_Agility_Time": 11.87,
+    "Shuttle_Run": 2.89,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Dillon Mitchell",
+    "Wingspan_in": 82.5,
+    "Lane_Agility_Time": 10.94,
+    "Shuttle_Run": 2.89,
+    "Hand_Width": 9.75,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Otega Oweh",
+    "Wingspan_in": 80.25,
+    "Lane_Agility_Time": 11.2,
+    "Shuttle_Run": 2.86,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Tobe Awaka",
+    "Wingspan_in": 86.25,
+    "Lane_Agility_Time": 10.94,
+    "Shuttle_Run": 3.02,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Cameron Boozer",
+    "Wingspan_in": 85.5,
+    "Lane_Agility_Time": 11.06,
+    "Shuttle_Run": 2.99,
+    "Hand_Width": 9.75,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Rafael Castro",
+    "Wingspan_in": 85.25,
+    "Lane_Agility_Time": 11.42,
+    "Shuttle_Run": 2.93,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Kingston Flemings",
+    "Wingspan_in": 75.5,
+    "Lane_Agility_Time": 10.61,
+    "Shuttle_Run": 2.69,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Bennett Stirtz",
+    "Wingspan_in": 78.0,
+    "Lane_Agility_Time": 11.25,
+    "Shuttle_Run": 2.91,
+    "Hand_Width": 9.75,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Cameron Carr",
+    "Wingspan_in": 84.75,
+    "Lane_Agility_Time": 10.46,
+    "Shuttle_Run": 2.8,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Bryce Hopkins",
+    "Wingspan_in": 82.5,
+    "Lane_Agility_Time": 10.71,
+    "Shuttle_Run": 2.95,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Milan Momcilovic",
+    "Wingspan_in": 81.25,
+    "Lane_Agility_Time": 11.22,
+    "Shuttle_Run": 2.95,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Trey Kaufman-Renn",
+    "Wingspan_in": 82.5,
+    "Lane_Agility_Time": 11.06,
+    "Shuttle_Run": 3.01,
+    "Hand_Width": 9.75,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Alex Karaban",
+    "Wingspan_in": 83.0,
+    "Lane_Agility_Time": 11.19,
+    "Shuttle_Run": 3.01,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Tyler Tanner",
+    "Wingspan_in": 76.25,
+    "Lane_Agility_Time": 10.88,
+    "Shuttle_Run": 2.92,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Darryn Peterson",
+    "Wingspan_in": 81.75,
+    "Lane_Agility_Time": 11.17,
+    "Shuttle_Run": 2.95,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Malachi Moreno",
+    "Wingspan_in": 85.5,
+    "Lane_Agility_Time": 11.62,
+    "Shuttle_Run": 3.11,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Caleb Wilson",
+    "Wingspan_in": 84.25,
+    "Lane_Agility_Time": 11.17,
+    "Shuttle_Run": 3.11,
+    "Hand_Width": 9.75,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Allen Graves",
+    "Wingspan_in": 84.0,
+    "Lane_Agility_Time": 11.76,
+    "Shuttle_Run": 3.18,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Felix Okpara",
+    "Wingspan_in": 86.0,
+    "Lane_Agility_Time": 11.01,
+    "Shuttle_Run": 2.99,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Christopher Brown Jr",
+    "Wingspan_in": 79.5,
+    "Lane_Agility_Time": 10.57,
+    "Shuttle_Run": 2.89,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Keyshawn Hall",
+    "Wingspan_in": 82.25,
+    "Lane_Agility_Time": 11.15,
+    "Shuttle_Run": 3.1,
+    "Hand_Width": 9.75,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Anicet Dybantsa",
+    "Wingspan_in": 84.5,
+    "Lane_Agility_Time": 11.06,
+    "Shuttle_Run": 2.99,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Ja'Kobi Gillespie",
+    "Wingspan_in": 76.0,
+    "Lane_Agility_Time": 10.94,
+    "Shuttle_Run": 2.91,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Darius Acuff Jr.",
+    "Wingspan_in": 78.5,
+    "Lane_Agility_Time": 10.99,
+    "Shuttle_Run": 2.93,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Maliq Brown",
+    "Wingspan_in": 84.75,
+    "Lane_Agility_Time": 11.22,
+    "Shuttle_Run": 3.05,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Billy Richmond III",
+    "Wingspan_in": 80.0,
+    "Lane_Agility_Time": 10.23,
+    "Shuttle_Run": 2.82,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Ryan Conwell",
+    "Wingspan_in": 79.0,
+    "Lane_Agility_Time": 10.69,
+    "Shuttle_Run": 2.86,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Amari Allen",
+    "Wingspan_in": 80.0,
+    "Lane_Agility_Time": 10.72,
+    "Shuttle_Run": 2.94,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Dailyn Swain",
+    "Wingspan_in": 82.0,
+    "Lane_Agility_Time": 11.25,
+    "Shuttle_Run": 3.08,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Bruce Thornton",
+    "Wingspan_in": 77.0,
+    "Lane_Agility_Time": 11.55,
+    "Shuttle_Run": 3.01,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Ebuka Okorie",
+    "Wingspan_in": 79.75,
+    "Lane_Agility_Time": 10.71,
+    "Shuttle_Run": 2.96,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Keaton Wagler",
+    "Wingspan_in": 78.25,
+    "Lane_Agility_Time": 11.05,
+    "Shuttle_Run": 3.0,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Milos Uzan",
+    "Wingspan_in": 77.0,
+    "Lane_Agility_Time": 10.7,
+    "Shuttle_Run": 2.87,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Aday Mara",
+    "Wingspan_in": 90.0,
+    "Lane_Agility_Time": 11.47,
+    "Shuttle_Run": 3.36,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Brayden Burries",
+    "Wingspan_in": 78.0,
+    "Lane_Agility_Time": 10.59,
+    "Shuttle_Run": 2.92,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Tobi Lawal",
+    "Wingspan_in": 82.5,
+    "Lane_Agility_Time": 11.15,
+    "Shuttle_Run": 3.08,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Christian Anderson",
+    "Wingspan_in": 78.25,
+    "Lane_Agility_Time": 10.85,
+    "Shuttle_Run": 2.85,
+    "Hand_Width": 8.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "John Blackwell",
+    "Wingspan_in": 74.25,
+    "Lane_Agility_Time": 11.23,
+    "Shuttle_Run": 3.08,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Labaron Philon",
+    "Wingspan_in": 78.25,
+    "Lane_Agility_Time": 11.55,
+    "Shuttle_Run": 3.13,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Kylan Boswell",
+    "Wingspan_in": 79.0,
+    "Lane_Agility_Time": 10.82,
+    "Shuttle_Run": 2.92,
+    "Hand_Width": 8.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Emanuel Sharp",
+    "Wingspan_in": 75.0,
+    "Lane_Agility_Time": 10.77,
+    "Shuttle_Run": 2.8,
+    "Hand_Width": 8.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Peter Suder",
+    "Wingspan_in": 80.0,
+    "Lane_Agility_Time": 11.23,
+    "Shuttle_Run": 3.14,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Koa Peat",
+    "Wingspan_in": 83.25,
+    "Lane_Agility_Time": 11.0,
+    "Shuttle_Run": 3.39,
+    "Hand_Width": 10.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Braden Smith",
+    "Wingspan_in": 75.25,
+    "Lane_Agility_Time": 10.76,
+    "Shuttle_Run": 2.87,
+    "Hand_Width": 8.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Jaden Bradley",
+    "Wingspan_in": 78.25,
+    "Lane_Agility_Time": 10.75,
+    "Shuttle_Run": 3.13,
+    "Hand_Width": 9.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Meleek Thomas",
+    "Wingspan_in": 78.75,
+    "Lane_Agility_Time": 11.57,
+    "Shuttle_Run": 2.97,
+    "Hand_Width": 7.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Jeremy Fears Jr.",
+    "Wingspan_in": 76.0,
+    "Lane_Agility_Time": 10.62,
+    "Shuttle_Run": 3.1,
+    "Hand_Width": 9.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Nicholas Boyd",
+    "Wingspan_in": 74.5,
+    "Lane_Agility_Time": 10.78,
+    "Shuttle_Run": 3.06,
+    "Hand_Width": 8.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Jayden Quaintance",
+    "Wingspan_in": 89.25,
+    "Lane_Agility_Time": NaN,
+    "Shuttle_Run": NaN,
+    "Hand_Width": 11.0,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Luigi Suigo",
+    "Wingspan_in": 89.5,
+    "Lane_Agility_Time": NaN,
+    "Shuttle_Run": NaN,
+    "Hand_Width": 10.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Richie Saunders",
+    "Wingspan_in": 80.75,
+    "Lane_Agility_Time": NaN,
+    "Shuttle_Run": NaN,
+    "Hand_Width": 10.25,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  },
+  {
+    "Player": "Tyler Bilodeau",
+    "Wingspan_in": 84.75,
+    "Lane_Agility_Time": NaN,
+    "Shuttle_Run": NaN,
+    "Hand_Width": 9.5,
+    "Projection": null,
+    "DBPM": null,
+    "Roster_Status": null
+  }
+];
+  // ======== END SEED ========
+
+  const LS_KEY = 'dbpm_players_v4';
+  const PROJECTION_RANK = {
+    'Top 10': 5,
+    'Mid 1st': 20,
+    'Late 1st': 35,
+    '2nd Round': 50,
+    'UDFA': 70,
+    '2025 Rookie': 70,
+    'Unknown': 60
+  };
+
+  let players = [];
+  let sortState = { key: 'predictedDBPM', dir: 'desc' };
+  let editingId = null;
+
+  // Utilities
+  const $ = sel => document.querySelector(sel);
+  const round2 = n => Math.round(n * 100) / 100;
+
+  function predict(row) {
+    const { wingspan, laneAgility, shuttleRun, handWidth } = row;
+    if ([wingspan, laneAgility, shuttleRun, handWidth].some(v => v === null || v === undefined || isNaN(v))) return null;
+    const val = -8.896 + 0.066*wingspan + 0.639*laneAgility - 3.392*shuttleRun + 0.629*handWidth;
+    return round2(val);
+  }
+
+  function median(arr) {
+    if (!arr.length) return null;
+    const sorted = [...arr].sort((a,b)=>a-b);
+    const mid = Math.floor(sorted.length/2);
+    return sorted.length % 2 ? sorted[mid] : round2((sorted[mid-1]+sorted[mid])/2);
+  }
+
+  function loadOrInit() {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      try { players = JSON.parse(raw); return; } catch {}
+    }
+    players = SEED_DATA.map(p => ({
+      id: crypto.randomUUID(),
+      name: p.Player,
+      wingspan: toNum(p.Wingspan_in),
+      laneAgility: toNum(p.Lane_Agility_Time),
+      shuttleRun: toNum(p.Shuttle_Run),
+      handWidth: toNum(p.Hand_Width),
+      projection: p.Projection || '2025 Rookie',
+      actualDBPM: toNum(p.DBPM, true)
+    }));
+    save();
+  }
+
+  function toNum(v, allowNull=false) {
+    if (v === null || v === undefined || v === '') return allowNull ? null : null;
+    const n = Number(v);
+    return isNaN(n) ? null : n;
+  }
+
+  function save() {
+    localStorage.setItem(LS_KEY, JSON.stringify(players));
+  }
+
+  function enrich(p) {
+    const predictedDBPM = predict(p);
+    const rank = PROJECTION_RANK[p.projection] ?? 60;
+    return { ...p, predictedDBPM, _rank: rank };
+  }
+
+  function computeStats(list) {
+    const withPred = list.map(enrich).filter(p => p.predictedDBPM !== null);
+    const med = median(withPred.map(p => p.predictedDBPM));
+    const enriched = list.map(enrich).map(p => ({
+      ...p,
+      isGem: p.predictedDBPM !== null && med !== null && p._rank > 30 && p.predictedDBPM > med
+    }));
+    return { enriched, median: med };
+  }
+
+  // Rendering
+  function render() {
+    const search = $('#searchInput').value.trim().toLowerCase();
+    const gemOnly = $('#gemToggle').checked;
+    const { enriched, median: med } = computeStats(players);
+
+    let view = enriched;
+    if (search) view = view.filter(p => p.name.toLowerCase().includes(search));
+    if (gemOnly) view = view.filter(p => p.isGem);
+
+    // Sort
+    view.sort((a,b) => {
+      const k = sortState.key;
+      const av = a[k]; const bv = b[k];
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      if (typeof av === 'string') return sortState.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      return sortState.dir === 'asc' ? av - bv : bv - av;
+    });
+
+    // Stats
+    $('#statTotal').textContent = players.length;
+    $('#statVisible').textContent = view.length;
+    $('#statGems').textContent = enriched.filter(p => p.isGem).length;
+    $('#statMedian').textContent = med !== null ? med.toFixed(2) : '—';
+
+    // Table Head
+    const headers = [
+      { key: 'name', label: 'Player' },
+      { key: 'projection', label: 'Projection' },
+      { key: 'wingspan', label: 'Wingspan' },
+      { key: 'laneAgility', label: 'Lane' },
+      { key: 'shuttleRun', label: 'Shuttle' },
+      { key: 'handWidth', label: 'Hand' },
+      { key: 'predictedDBPM', label: 'Pred DBPM' },
+      { key: 'actualDBPM', label: 'Actual DBPM' },
+      { key: 'isGem', label: 'Gem' },
+    ];
+    $('#theadRow').innerHTML = headers.map(h => `
+      <th class="px-3 py-2 font-medium select-none cursor-pointer whitespace-nowrap" data-sort="${h.key}">
+        <span class="inline-flex items-center gap-1">
+          ${h.label}
+          ${sortState.key === h.key ? (sortState.dir === 'asc' ? '▲' : '▼') : '<span class="text-slate-600">▲▼</span>'}
+        </span>
+      </th>
+    `).join('');
+
+    // Add click listeners for sorting
+    $('#theadRow').querySelectorAll('th').forEach(th => {
+      th.onclick = () => {
+        const k = th.dataset.sort;
+        if (sortState.key === k) sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+        else { sortState.key = k; sortState.dir = k === 'name' || k === 'projection' ? 'asc' : 'desc'; }
+        render();
+      };
+    });
+
+    // Table Body
+    $('#tbody').innerHTML = view.map(p => `
+      <tr class="hover:bg-slate-800/60 cursor-pointer" data-id="${p.id}">
+        <td class="px-3 py-2 font-medium">${escapeHtml(p.name)}</td>
+        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded-full text-xs border ${projClass(p.projection)}">${p.projection}</span></td>
+        <td class="px-3 py-2 mono">${fmt(p.wingspan)}</td>
+        <td class="px-3 py-2 mono">${fmt(p.laneAgility)}</td>
+        <td class="px-3 py-2 mono">${fmt(p.shuttleRun)}</td>
+        <td class="px-3 py-2 mono">${fmt(p.handWidth)}</td>
+        <td class="px-3 py-2 mono font-semibold ${p.predictedDBPM>0 ? 'text-emerald-400' : 'text-slate-200'}">${fmt(p.predictedDBPM, true)}</td>
+        <td class="px-3 py-2 mono">${fmt(p.actualDBPM, true)}</td>
+        <td class="px-3 py-2">${p.isGem ? '<span class="text-emerald-400">💎</span>' : ''}</td>
+      </tr>
+    `).join('') || `<tr><td colspan="9" class="px-3 py-8 text-center text-slate-500">No players match filters.</td></tr>`;
+
+    // Row click to edit
+    $('#tbody').querySelectorAll('tr[data-id]').forEach(tr => {
+      tr.onclick = () => openEditor(tr.dataset.id);
+    });
+
+    // Mobile Cards
+    $('#mobileCards').innerHTML = view.map(p => `
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 active:scale-[0.99] transition" data-id="${p.id}">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="font-semibold">${escapeHtml(p.name)}</div>
+            <div class="mt-1 flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-full text-[11px] border ${projClass(p.projection)}">${p.projection}</span>
+              ${p.isGem ? '<span class="text-emerald-400 text-sm">💎 Gem</span>' : ''}
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-[11px] uppercase text-slate-400">Pred DBPM</div>
+            <div class="mono text-lg font-semibold ${p.predictedDBPM>0 ? 'text-emerald-400' : ''}">${fmt(p.predictedDBPM, true)}</div>
+            <div class="text-[11px] text-slate-500">Actual: <span class="mono">${fmt(p.actualDBPM, true)}</span></div>
+          </div>
+        </div>
+        <div class="mt-3 grid grid-cols-4 gap-2 text-center">
+          ${metricCell('Wing', p.wingspan)}
+          ${metricCell('Lane', p.laneAgility)}
+          ${metricCell('Shuttle', p.shuttleRun)}
+          ${metricCell('Hand', p.handWidth)}
+        </div>
+      </div>
+    `).join('');
+
+    $('#mobileCards').querySelectorAll('[data-id]').forEach(card => {
+      card.onclick = () => openEditor(card.dataset.id);
+    });
+  }
+
+  function metricCell(label, val) {
+    return `<div class="bg-slate-950 border border-slate-800 rounded-xl py-2">
+      <div class="text-[10px] uppercase text-slate-500">${label}</div>
+      <div class="mono text-sm">${fmt(val)}</div>
+    </div>`;
+  }
+
+  function projClass(p) {
+    switch(p) {
+      case 'Top 10': return 'border-sky-800 bg-sky-950 text-sky-200';
+      case 'Mid 1st': return 'border-indigo-800 bg-indigo-950 text-indigo-200';
+      case 'Late 1st': return 'border-violet-800 bg-violet-950 text-violet-200';
+      case '2nd Round': return 'border-slate-700 bg-slate-800 text-slate-200';
+      case 'UDFA': return 'border-amber-800 bg-amber-950 text-amber-200';
+      case '2025 Rookie': return 'border-emerald-800 bg-emerald-950 text-emerald-200';
+      default: return 'border-slate-700 bg-slate-800 text-slate-300';
+    }
+  }
+
+  function fmt(v, dash=false) {
+    if (v === null || v === undefined || isNaN(v)) return dash ? '—' : '';
+    return typeof v === 'number' ? v.toFixed(2) : v;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // Editor
+  const form = $('#playerForm');
+  function openEditor(id=null) {
+    editingId = id;
+    $('#editorPanel').classList.remove('hidden');
+    if (id) {
+      const p = players.find(x => x.id === id);
+      if (!p) return;
+      form.name.value = p.name;
+      form.wingspan.value = p.wingspan ?? '';
+      form.laneAgility.value = p.laneAgility ?? '';
+      form.shuttleRun.value = p.shuttleRun ?? '';
+      form.handWidth.value = p.handWidth ?? '';
+      form.projection.value = p.projection;
+      form.actualDBPM.value = p.actualDBPM ?? '';
+      $('#saveBtn').textContent = 'Update Player';
+      $('#deleteBtn').classList.remove('hidden');
+    } else {
+      form.reset();
+      form.projection.value = '2025 Rookie';
+      $('#saveBtn').textContent = 'Add Player';
+      $('#deleteBtn').classList.add('hidden');
+    }
+    updateLivePred();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function closeEditor() {
+    $('#editorPanel').classList.add('hidden');
+    editingId = null;
+    form.reset();
+  }
+
+  function updateLivePred() {
+    const data = readForm();
+    const pred = predict(data);
+    $('#livePred').textContent = pred === null ? '—' : pred.toFixed(2);
+  }
+
+  function readForm() {
+    return {
+      name: form.name.value.trim(),
+      wingspan: toNum(form.wingspan.value),
+      laneAgility: toNum(form.laneAgility.value),
+      shuttleRun: toNum(form.shuttleRun.value),
+      handWidth: toNum(form.handWidth.value),
+      projection: form.projection.value,
+      actualDBPM: toNum(form.actualDBPM.value, true)
+    };
+  }
+
+  form.addEventListener('input', updateLivePred);
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = readForm();
+    if (!data.name) { alert('Player name required'); return; }
+    if (editingId) {
+      const idx = players.findIndex(p => p.id === editingId);
+      if (idx >= 0) players[idx] = { ...players[idx], ...data };
+    } else {
+      players.push({ id: crypto.randomUUID(), ...data });
+    }
+    save();
+    closeEditor();
+    render();
+  });
+
+  $('#deleteBtn').onclick = () => {
+    if (!editingId) return;
+    if (!confirm('Delete this player?')) return;
+    players = players.filter(p => p.id !== editingId);
+    save();
+    closeEditor();
+    render();
+  };
+
+  $('#addBtn').onclick = () => openEditor(null);
+  $('#cancelBtn').onclick = closeEditor;
+  $('#closeEditor').onclick = closeEditor;
+
+  // Search & toggle
+  $('#searchInput').addEventListener('input', render);
+  $('#gemToggle').addEventListener('change', render);
+
+  // Import CSV
+  $('#importInput').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    importCsv(text);
+    e.target.value = '';
+  });
+
+  function importCsv(csv) {
+    const lines = csv.split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) return alert('Empty CSV');
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const idx = {
+      name: headers.findIndex(h => ['player','name'].includes(h)),
+      wingspan: headers.findIndex(h => ['wingspan_in','wingspan'].includes(h)),
+      lane: headers.findIndex(h => ['lane_agility_time','lane'].includes(h)),
+      shuttle: headers.findIndex(h => ['shuttle_run','shuttle'].includes(h)),
+      hand: headers.findIndex(h => ['hand_width','hand'].includes(h)),
+      projection: headers.findIndex(h => ['projection'].includes(h)),
+      dbpm: headers.findIndex(h => ['dbpm','actual','actual_dbpm'].includes(h)),
+    };
+    if (idx.name === -1) return alert('CSV must have Player column');
+    let added = 0, updated = 0;
+    for (let i=1;i<lines.length;i++) {
+      const cols = parseCsvLine(lines[i]);
+      if (!cols.length) continue;
+      const name = cols[idx.name]?.trim();
+      if (!name) continue;
+      const row = {
+        name,
+        wingspan: idx.wingspan>=0 ? toNum(cols[idx.wingspan]) : null,
+        laneAgility: idx.lane>=0 ? toNum(cols[idx.lane]) : null,
+        shuttleRun: idx.shuttle>=0 ? toNum(cols[idx.shuttle]) : null,
+        handWidth: idx.hand>=0 ? toNum(cols[idx.hand]) : null,
+        projection: idx.projection>=0 ? (cols[idx.projection] || 'Unknown') : 'Unknown',
+        actualDBPM: idx.dbpm>=0 ? toNum(cols[idx.dbpm], true) : null
+      };
+      // must have all 4 measurements to be valid per spec
+      if ([row.wingspan,row.laneAgility,row.shuttleRun,row.handWidth].some(v=>v===null)) continue;
+      const existingIdx = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+      if (existingIdx >= 0) {
+        players[existingIdx] = { ...players[existingIdx], ...row };
+        updated++;
+      } else {
+        players.push({ id: crypto.randomUUID(), ...row });
+        added++;
+      }
+    }
+    save();
+    render();
+    alert(`Import complete. Added ${added}, Updated ${updated}.`);
+  }
+
+  function parseCsvLine(line) {
+    // Basic CSV parser handling quotes
+    const out = [];
+    let cur = '', inQ = false;
+    for (let i=0;i<line.length;i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === ',' && !inQ) { out.push(cur); cur=''; continue; }
+      cur += ch;
+    }
+    out.push(cur);
+    return out.map(s => s.trim());
+  }
+
+  // Export CSV
+  $('#exportBtn').onclick = () => {
+    const search = $('#searchInput').value.trim().toLowerCase();
+    const gemOnly = $('#gemToggle').checked;
+    const { enriched } = computeStats(players);
+    let view = enriched;
+    if (search) view = view.filter(p => p.name.toLowerCase().includes(search));
+    if (gemOnly) view = view.filter(p => p.isGem);
+    view.sort((a,b) => {
+      const k = sortState.key;
+      const av = a[k]; const bv = b[k];
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      if (typeof av === 'string') return sortState.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      return sortState.dir === 'asc' ? av - bv : bv - av;
+    });
+
+    const headers = ['Player','Wingspan_in','Lane_Agility_Time','Shuttle_Run','Hand_Width','Projection','Predicted_DBPM','Actual_DBPM','Is_Gem'];
+    const rows = view.map(p => [
+      p.name,
+      p.wingspan ?? '',
+      p.laneAgility ?? '',
+      p.shuttleRun ?? '',
+      p.handWidth ?? '',
+      p.projection,
+      p.predictedDBPM ?? '',
+      p.actualDBPM ?? '',
+      p.isGem ? 'TRUE' : 'FALSE'
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.map(v => typeof v==='string' && v.includes(',') ? `"${v}"` : v).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'dbpm_players_export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Reset
+  $('#resetBtn').onclick = () => {
+    if (!confirm('Reset all data to seed? This will erase local changes.')) return;
+    localStorage.removeItem(LS_KEY);
+    loadOrInit();
+    render();
+  };
+
+  // Init
+  loadOrInit();
+  render();
+  </script>
+</body>
+</html>
