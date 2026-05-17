@@ -1,625 +1,867 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NBA Combine Rookie Defensive Model · 2026</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg:#07111f; --panel:#0d1b2d; --panel2:#122238; --line:#1e3350;
-      --text:#edf5ff; --muted:#8ba5c2; --blue:#5cc8ff; --green:#6ef0a3;
-      --gold:#ffd166; --red:#ff7a90; --shadow:0 20px 60px rgba(0,0,0,.35);
-    }
-    *,*::before,*::after{box-sizing:border-box}
-    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.6;background:var(--bg);color:var(--text)}
-    /* Nav */
-    .site-nav{position:sticky;top:0;z-index:10;background:rgba(7,17,31,.92);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
-    .nav-inner{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;justify-content:space-between;max-width:1280px;margin:0 auto;padding:.6rem 1rem}
-    .nav-brand{font-weight:800;letter-spacing:-.03em;color:var(--blue);font-size:.95rem}
-    .nav-links{display:flex;gap:.2rem;flex-wrap:wrap}
-    .nav-links a{color:var(--muted);text-decoration:none;font-size:.8rem;font-weight:700;padding:.3rem .65rem;border-radius:999px;transition:color .15s,background .15s}
-    .nav-links a:hover{color:var(--text);background:var(--panel2)}
-    /* Layout */
-    .wrap{max-width:1280px;margin:0 auto;padding:0 1rem}
-    .section{padding:2rem 0 0}
-    /* Card */
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
-    .eyebrow{font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin:0 0 .4rem}
-    h1{margin:.4rem 0 .7rem;font-size:clamp(1.7rem,3.5vw,3rem);letter-spacing:-.05em;line-height:1}
-    h2{margin:0 0 1rem;font-size:1.2rem;font-weight:800;letter-spacing:-.03em}
-    /* Hero */
-    .hero{display:grid;grid-template-columns:1.6fr .85fr;gap:1rem}
-    .hero-main{padding:1.75rem 2rem;position:relative;overflow:hidden}
-    .hero-main::after{content:"";position:absolute;inset:auto -80px -140px auto;width:260px;height:260px;border-radius:50%;background:rgba(92,200,255,.07);filter:blur(2px);pointer-events:none}
-    .hero-sub{color:var(--muted);max-width:55ch;margin:.5rem 0 0}
-    .formula-box{margin-top:1.1rem;padding:.9rem 1rem;background:rgba(7,17,31,.8);border:1px solid var(--line);border-radius:14px;font-family:"SFMono-Regular",Consolas,ui-monospace,monospace;font-size:.82rem;color:#cce8ff;overflow-x:auto;white-space:nowrap}
-    .hero-side{padding:1.25rem;display:grid;gap:.65rem}
-    .metric{padding:.85rem 1.1rem;background:var(--panel2);border:1px solid var(--line);border-radius:16px}
-    .metric-label{font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-    .metric-val{display:block;margin-top:.2rem;font-size:1.75rem;font-weight:800;letter-spacing:-.04em}
-    /* Insights */
-    .insights-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-    .insight-card{padding:1.25rem}
-    .insight-card h2{font-size:1rem}
-    .bar-list{display:grid;gap:.55rem}
-    .bar-row{display:grid;grid-template-columns:165px 1fr 52px;gap:8px;align-items:center;font-size:.8rem}
-    .bar-track{height:10px;background:rgba(7,17,31,.8);border-radius:999px;overflow:hidden;border:1px solid var(--line)}
-    .bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--blue),var(--green))}
-    .scatter{width:100%;min-height:260px;background:rgba(7,17,31,.5);border:1px solid var(--line);border-radius:14px}
-    /* Controls */
-    .controls-bar{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;justify-content:space-between;padding:.9rem 1.1rem}
-    .controls-left,.controls-right{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center}
-    input,select,button{font:inherit}
-    .search-input{width:210px;padding:.5rem .8rem;background:var(--bg);border:1px solid var(--line);border-radius:12px;color:var(--text);outline:none}
-    .search-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(92,200,255,.12)}
-    select.sel{padding:.5rem .8rem;background:var(--bg);border:1px solid var(--line);border-radius:12px;color:var(--text);outline:none;cursor:pointer}
-    .btn{padding:.45rem .85rem;border-radius:12px;border:1px solid var(--line);font-weight:700;font-size:.8rem;cursor:pointer;transition:opacity .12s;background:var(--panel2);color:var(--text)}
-    .btn:hover{opacity:.8}
-    .btn-primary{background:var(--blue);color:#07111f;border-color:transparent}
-    .gem-label{display:flex;align-items:center;gap:.35rem;font-size:.8rem;font-weight:700;cursor:pointer;color:var(--muted)}
-    /* Stats bar */
-    .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;padding:0 1.1rem .85rem}
-    .stat-cell{text-align:center;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:.6rem}
-    .stat-label{font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-    .stat-val{font-size:1.4rem;font-weight:800;letter-spacing:-.04em}
-    /* Table */
-    .table-wrap{overflow-x:auto}
-    table{width:100%;border-collapse:collapse;font-size:.83rem}
-    th{padding:.65rem .85rem;text-align:left;font-size:.69rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
-    th:hover{color:var(--text)}
-    td{padding:.6rem .85rem;border-bottom:1px solid rgba(30,51,80,.5);white-space:nowrap;vertical-align:middle}
-    tr:hover td{background:rgba(92,200,255,.04)}
-    .mono{font-family:"SFMono-Regular",Consolas,ui-monospace,monospace}
-    .good{color:var(--green)} .bad{color:var(--red)}
-    .note-sm{color:var(--muted);font-size:.75rem}
-    /* Pills */
-    .pill{display:inline-flex;align-items:center;padding:.18rem .5rem;border-radius:999px;font-size:.69rem;font-weight:800;border:1px solid var(--line)}
-    .pill-proj{color:var(--blue);background:rgba(92,200,255,.1);border-color:rgba(92,200,255,.25)}
-    .pill-train{color:var(--gold);background:rgba(255,209,102,.08);border-color:rgba(255,209,102,.3)}
-    .pill-custom{color:var(--green);background:rgba(110,240,163,.08);border-color:rgba(110,240,163,.3)}
-    /* Mobile cards */
-    .mobile-cards{display:none;grid-template-columns:1fr;gap:.7rem;padding:.7rem 1rem}
-    /* Calculator */
-    .calc-wrap{padding:1.4rem}
-    .calc-grid{display:grid;grid-template-columns:1.5fr repeat(4,1fr);gap:.75rem;align-items:end}
-    label.field{display:grid;gap:.3rem;font-size:.75rem;font-weight:700;color:var(--muted)}
-    .field input{padding:.55rem .8rem;background:var(--bg);border:1px solid var(--line);border-radius:12px;color:var(--text);outline:none}
-    .field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(92,200,255,.12)}
-    .calc-result{margin-top:.9rem;padding:.9rem 1.1rem;background:linear-gradient(90deg,rgba(92,200,255,.09),rgba(110,240,163,.05));border:1px solid var(--line);border-radius:16px;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
-    .calc-dbpm{font-size:2.2rem;font-weight:800;letter-spacing:-.05em}
-    .calc-actions{margin-left:auto;display:flex;gap:.45rem;flex-wrap:wrap}
-    /* Section card */
-    .section-card{padding:1.4rem}
-    .caveat{background:rgba(255,209,102,.03);border-color:rgba(255,209,102,.18)}
-    /* Footer */
-    .site-footer{margin-top:4rem;padding:2rem 1rem 3rem;text-align:center;color:var(--muted);font-size:.78rem;border-top:1px solid var(--line)}
-    /* Responsive */
-    @media(max-width:900px){
-      .hero{grid-template-columns:1fr}
-      .hero-side{grid-template-columns:repeat(4,1fr);padding-top:0}
-      .insights-grid{grid-template-columns:1fr}
-      .stats-bar{grid-template-columns:repeat(2,1fr)}
-    }
-    @media(max-width:640px){
-      .calc-grid{grid-template-columns:1fr 1fr}
-      .calc-grid>label:first-child{grid-column:span 2}
-      .table-wrap table{display:none}
-      .mobile-cards{display:grid}
-      .search-input{width:100%}
-      .controls-bar{flex-direction:column;align-items:stretch}
-      .controls-left,.controls-right{flex-direction:column}
-      .hero-side{grid-template-columns:repeat(2,1fr)}
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Rookie Defensive Forecast · 2026 NBA Draft Class</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f1ea;
+    --bg-2:#ede7da;
+    --rule:#1d1d1b;
+    --rule-soft:rgba(29,29,27,.18);
+    --ink:#1d1d1b;
+    --ink-2:#5a5853;
+    --ink-3:#8a877f;
+    --orange:#d8542b;
+    --orange-2:#f2a26c;
+    --teal:#1f6d6a;
+    --good:#1f6d6a;
+    --bad:#d8542b;
+    --gem:#e8b51f;
+    --sans:'Archivo', system-ui, sans-serif;
+    --display:'Archivo Narrow', 'Archivo', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:0 22px 80px;}
+
+  /* Masthead */
+  header.mast{
+    border-bottom:1px solid var(--rule);
+    padding:14px 0 12px;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .mast-brand{
+    font-family:var(--display);font-weight:700;
+    font-size:.95rem;letter-spacing:.08em;text-transform:uppercase;
+    display:flex;align-items:center;gap:10px;
+  }
+  .mast-brand .dot{
+    width:10px;height:10px;background:var(--orange);border-radius:2px;display:inline-block;
+  }
+  .mast-meta{
+    font-family:var(--mono);font-size:.7rem;color:var(--ink-2);
+    letter-spacing:.02em;
+  }
+
+  /* Hero */
+  .hero{
+    padding:34px 0 24px;border-bottom:6px solid var(--ink);
+  }
+  .kicker{
+    font-family:var(--display);font-weight:700;
+    font-size:.78rem;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--orange);margin-bottom:14px;
+    display:inline-block;
+    border-bottom:2px solid var(--orange);padding-bottom:4px;
+  }
+  h1.title{
+    font-family:var(--display);font-weight:700;
+    font-size:clamp(2.5rem, 8vw, 5.2rem);
+    line-height:1.02;letter-spacing:-.02em;
+    margin:0 0 16px;text-wrap:balance;
+    text-transform:none;
+    padding-bottom:.04em;
+  }
+  h1.title .hl{
+    background:var(--orange);color:#fff;
+    padding:0 .12em;display:inline-block;
+    box-decoration-break:clone;
+  }
+  .dek{
+    font-family:var(--sans);font-weight:400;
+    font-size:clamp(1.05rem, 2.4vw, 1.28rem);
+    color:var(--ink-2);
+    max-width:64ch;
+    margin:0 0 16px;line-height:1.45;
+  }
+  .byline{
+    font-family:var(--mono);font-size:.74rem;
+    color:var(--ink-3);
+    border-top:1px dotted var(--rule-soft);
+    padding-top:10px;margin-top:10px;
+    display:flex;gap:14px;flex-wrap:wrap;
+  }
+  .byline strong{color:var(--ink);font-weight:600;letter-spacing:0}
+
+  /* Big number strip */
+  .stat-strip{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+    margin-top:26px;
+    border:1px solid var(--rule);
+    background:#fff;
+  }
+  .stat-strip > div{
+    padding:14px 14px 12px;
+    border-right:1px solid var(--rule-soft);
+  }
+  .stat-strip > div:last-child{border-right:0}
+  .stat-strip .label{
+    font-family:var(--display);font-weight:600;
+    font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-3);
+  }
+  .stat-strip .val{
+    font-family:var(--display);font-weight:700;
+    font-size:2.1rem;letter-spacing:-.02em;line-height:1;
+    margin-top:2px;
+  }
+  .stat-strip .sub{
+    font-family:var(--mono);font-size:.7rem;color:var(--ink-2);
+    margin-top:4px;
+  }
+
+  /* Formula */
+  .formula-strip{
+    margin-top:14px;border:1px solid var(--rule);background:#fff;
+    padding:10px 14px;
+    font-family:var(--mono);font-size:.82rem;
+    overflow-x:auto;white-space:nowrap;
+    display:flex;align-items:center;gap:14px;
+  }
+  .formula-strip .tag{
+    font-family:var(--display);font-weight:700;
+    font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;
+    background:var(--orange);color:#fff;padding:3px 7px;flex:0 0 auto;
+  }
+
+  /* Section heads */
+  .section-head{
+    margin:46px 0 14px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;
+    border-bottom:2px solid var(--rule);padding-bottom:8px;
+  }
+  .section-head h2{
+    font-family:var(--display);font-weight:700;
+    font-size:1.6rem;letter-spacing:-.01em;margin:0;
+    text-transform:none;
+  }
+  .section-head h2 .num{
+    color:var(--orange);font-weight:700;margin-right:8px;
+    font-feature-settings:"tnum";
+  }
+  .section-head .meta{
+    font-family:var(--mono);font-size:.72rem;color:var(--ink-3);
+  }
+
+  /* Diagnostics row (chart + scatter) */
+  .diag-row{
+    display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:14px;
+    align-items:stretch;
+  }
+  .pane{
+    border:1px solid var(--rule);background:#fff;
+    display:flex;flex-direction:column;
+  }
+  .pane-head{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:10px 14px;border-bottom:1px solid var(--rule-soft);
+    background:var(--bg-2);
+  }
+  .pane-head .t{
+    font-family:var(--display);font-weight:700;
+    font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink);
+  }
+  .pane-head .t b{color:var(--orange)}
+  .pane-head .m{font-family:var(--mono);font-size:.68rem;color:var(--ink-3)}
+  .pane-body{padding:16px;flex:1;display:flex;flex-direction:column}
+  .coef-list{display:grid;gap:11px}
+  .coef-row{
+    display:grid;grid-template-columns:96px 1fr 56px;gap:12px;align-items:center;
+    font-family:var(--sans);font-size:.85rem;
+  }
+  .coef-row .nm{font-family:var(--display);font-weight:600;font-size:.92rem;color:var(--ink)}
+  .coef-row .bar{
+    height:14px;position:relative;background:var(--bg-2);
+    border:1px solid var(--rule-soft);
+  }
+  .coef-row .bar .ax{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--ink)}
+  .coef-row .bar .fill{position:absolute;top:0;bottom:0;background:var(--orange)}
+  .coef-row .bar .fill.neg{background:var(--ink)}
+  .coef-row .v{
+    text-align:right;font-family:var(--mono);font-weight:600;font-size:.84rem;
+    font-variant-numeric:tabular-nums;
+  }
+  .coef-row .v.pos{color:var(--orange)}
+  .coef-row .v.neg{color:var(--ink)}
+  .coef-foot{
+    display:flex;justify-content:space-between;
+    font-family:var(--display);font-weight:600;
+    font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-3);margin-top:10px;padding-top:10px;
+    border-top:1px dotted var(--rule-soft);
+  }
+  .coef-note{
+    margin-top:auto;padding-top:14px;
+    font-family:var(--sans);font-size:.88rem;color:var(--ink-2);
+    line-height:1.5;
+  }
+  .coef-note strong{color:var(--ink);font-weight:700}
+
+  /* Insights */
+  .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--rule);background:#fff}
+  .insight-cell{padding:16px 16px 18px;border-right:1px solid var(--rule-soft)}
+  .insight-cell:last-child{border-right:0}
+  .insight-num{
+    font-family:var(--display);font-weight:700;
+    font-size:.7rem;letter-spacing:.18em;color:var(--orange);text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  .insight-text{
+    font-family:var(--sans);font-size:.95rem;line-height:1.5;color:var(--ink);
+    text-wrap:pretty;
+  }
+  .insight-text strong{font-weight:700}
+  .insight-text em{color:var(--ink-2);font-style:italic}
+
+  /* Bar leaderboard */
+  .ldr{
+    border:1px solid var(--rule);background:#fff;
+  }
+  .ldr-tools{
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    padding:12px 14px;border-bottom:1px solid var(--rule-soft);
+  }
+  .ldr-tools input[type=search]{
+    flex:1;min-width:140px;
+    font-family:var(--sans);font-size:.88rem;
+    padding:8px 11px;border:1px solid var(--rule);background:var(--bg);
+    color:var(--ink);outline:none;border-radius:0;
+  }
+  .ldr-tools input[type=search]:focus{box-shadow:inset 0 0 0 1px var(--orange);border-color:var(--orange)}
+  .seg{display:inline-flex;border:1px solid var(--rule)}
+  .seg button{
+    font-family:var(--display);font-weight:600;
+    background:transparent;border:0;color:var(--ink-2);
+    padding:7px 11px;font-size:.7rem;letter-spacing:.1em;
+    text-transform:uppercase;cursor:pointer;
+    border-right:1px solid var(--rule);
+  }
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:var(--ink);color:#fff}
+  .seg button.on.gem{background:var(--gem);color:var(--ink)}
+  .ldr-body{padding:6px 0 6px}
+  .ldr-row{
+    display:grid;grid-template-columns:38px 1.4fr 1fr 56px 28px;
+    gap:10px;align-items:center;
+    padding:7px 14px;border-bottom:1px solid var(--rule-soft);
+    font-family:var(--sans);font-size:.88rem;
+    transition:background .12s;
+  }
+  .ldr-row:last-child{border-bottom:0}
+  .ldr-row:hover{background:var(--bg-2)}
+  .ldr-rank{
+    font-family:var(--display);font-weight:700;font-size:1rem;
+    color:var(--ink-3);text-align:right;
+    font-feature-settings:"tnum";
+  }
+  .ldr-name{font-weight:600;font-size:.95rem;color:var(--ink)}
+  .ldr-name .cls-mark{
+    display:inline-block;width:5px;height:5px;border-radius:50%;
+    background:var(--orange);margin-right:6px;vertical-align:middle;
+  }
+  .ldr-name .cls-mark.training{background:var(--ink-3)}
+  .ldr-meta{font-family:var(--mono);font-size:.7rem;color:var(--ink-3);margin-top:1px}
+  .ldr-bar{
+    height:14px;position:relative;background:var(--bg-2);
+    border:1px solid var(--rule-soft);
+  }
+  .ldr-bar .axis{
+    position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--ink);
+  }
+  .ldr-bar .fill{
+    position:absolute;top:0;bottom:0;
+    background:var(--orange);
+  }
+  .ldr-bar .fill.neg{background:var(--ink)}
+  .ldr-pred{
+    font-family:var(--mono);font-weight:600;font-size:.88rem;
+    text-align:right;font-variant-numeric:tabular-nums;
+  }
+  .ldr-pred.pos{color:var(--orange)}
+  .ldr-pred.neg{color:var(--ink)}
+  .gem-btn{
+    background:none;border:0;cursor:pointer;font-size:1rem;line-height:1;padding:2px;
+    color:rgba(29,29,27,.18);text-align:center;
+  }
+  .gem-btn.on{color:var(--gem)}
+
+  /* Calculator */
+  .calc{
+    border:1px solid var(--rule);background:#fff;padding:16px 16px 16px;
+  }
+  .calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .calc-grid label{
+    font-family:var(--display);font-weight:600;
+    font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-3);display:flex;flex-direction:column;gap:5px;
+  }
+  .calc-grid input[type=number]{
+    font-family:var(--mono);font-size:1.1rem;font-weight:600;
+    background:var(--bg);color:var(--ink);
+    border:1px solid var(--rule);padding:9px 10px;border-radius:0;width:100%;
+    -moz-appearance:textfield;
+  }
+  .calc-grid input[type=number]::-webkit-outer-spin-button,
+  .calc-grid input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .calc-grid input:focus{outline:none;border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange)}
+  .calc-out{
+    margin-top:16px;display:flex;align-items:stretch;gap:0;
+    border:1px solid var(--rule);
+  }
+  .calc-out .big{
+    flex:0 0 auto;min-width:140px;
+    background:var(--ink);color:#fff;
+    padding:14px 18px;display:flex;flex-direction:column;justify-content:center;
+  }
+  .calc-out .big .lab{
+    font-family:var(--display);font-weight:600;
+    font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--orange-2);
+  }
+  .calc-out .big .num{
+    font-family:var(--display);font-weight:700;
+    font-size:2.6rem;letter-spacing:-.04em;line-height:1;margin-top:4px;
+  }
+  .calc-out .desc{
+    flex:1;padding:14px 18px;display:flex;flex-direction:column;justify-content:center;
+    background:#fff;
+  }
+  .calc-out .desc .lab{
+    font-family:var(--display);font-weight:600;
+    font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--ink-3);
+  }
+  .calc-out .desc .txt{
+    font-family:var(--sans);font-size:1rem;line-height:1.45;
+    color:var(--ink);margin-top:4px;
+  }
+
+  /* Scatter (inside pane) */
+  .pane svg.scat{display:block;width:100%;height:auto;flex:1}
+  .chart-cap{
+    font-family:var(--sans);font-size:.85rem;color:var(--ink-2);
+    margin-top:10px;line-height:1.45;padding-top:10px;
+    border-top:1px dotted var(--rule-soft);
+  }
+  .chart-cap strong{color:var(--ink);font-weight:600}
+
+  /* Caveats */
+  .caveat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border:1px solid var(--rule);background:#fff}
+  .caveat-cell{
+    padding:14px 16px;border-right:1px solid var(--rule-soft);
+    border-bottom:1px solid var(--rule-soft);
+  }
+  .caveat-cell:nth-child(2n){border-right:0}
+  .caveat-cell:nth-last-child(-n+2){border-bottom:0}
+  .caveat-cell .lbl{
+    font-family:var(--display);font-weight:700;
+    font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--orange);
+  }
+  .caveat-cell .body{
+    font-family:var(--sans);font-size:.92rem;line-height:1.5;
+    color:var(--ink-2);margin-top:5px;
+  }
+
+  /* Sources */
+  .src-list{
+    border:1px solid var(--rule);background:#fff;
+  }
+  .src-row{
+    display:grid;grid-template-columns:200px 1fr auto;gap:14px;align-items:baseline;
+    padding:12px 16px;border-bottom:1px solid var(--rule-soft);
+    font-family:var(--sans);
+  }
+  .src-row:last-child{border-bottom:0}
+  .src-name{
+    font-family:var(--display);font-weight:700;font-size:.92rem;
+    color:var(--ink);letter-spacing:.01em;
+  }
+  .src-desc{font-size:.88rem;color:var(--ink-2);line-height:1.45}
+  .src-link{
+    font-family:var(--mono);font-size:.72rem;
+    color:var(--orange);text-decoration:none;border-bottom:1px solid var(--orange);
+    white-space:nowrap;
+  }
+  .src-link:hover{background:var(--orange);color:#fff;border-bottom-color:transparent;padding:0 4px}
+
+  /* More analysis cards */
+  .more-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+  }
+  .more-card{
+    border:1px solid var(--rule);background:#fff;
+    padding:18px 18px 16px;display:flex;flex-direction:column;gap:8px;
+    text-decoration:none;color:inherit;
+    transition:background .15s,transform .15s;
+    position:relative;
+  }
+  .more-card:hover{background:var(--bg-2)}
+  .more-card .kic{
+    font-family:var(--display);font-weight:700;
+    font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--orange);
+  }
+  .more-card .ttl{
+    font-family:var(--display);font-weight:700;
+    font-size:1.1rem;letter-spacing:-.01em;color:var(--ink);
+    line-height:1.2;text-wrap:balance;
+  }
+  .more-card .desc{
+    font-family:var(--sans);font-size:.85rem;color:var(--ink-2);line-height:1.45;
+    flex:1;
+  }
+  .more-card .go{
+    font-family:var(--mono);font-size:.72rem;
+    color:var(--orange);margin-top:8px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .more-card .go::after{content:"→";transition:transform .15s}
+  .more-card:hover .go::after{transform:translateX(4px)}
+  .more-card.featured{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .more-card.featured .ttl{color:#fff}
+  .more-card.featured .desc{color:#cdcac3}
+  .more-card.featured .kic{color:var(--orange-2)}
+  .more-card.featured:hover{background:#000}
+
+  /* Footer */
+  footer{
+    margin-top:50px;border-top:1px solid var(--rule);
+    padding:14px 0;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    font-family:var(--mono);font-size:.72rem;color:var(--ink-3);
+  }
+
+  /* Mobile */
+  @media (max-width:680px){
+    .wrap{padding:0 16px 50px}
+    .more-grid{grid-template-columns:1fr}
+    .src-row{grid-template-columns:1fr;gap:4px}
+    .src-link{justify-self:start}
+    .diag-row{grid-template-columns:1fr}
+    .stat-strip{grid-template-columns:repeat(2,1fr)}
+    .stat-strip > div{border-bottom:1px solid var(--rule-soft)}
+    .stat-strip > div:nth-child(2n){border-right:0}
+    .stat-strip > div:nth-child(n+3){border-bottom:0}
+    .insight-grid{grid-template-columns:1fr}
+    .insight-cell{border-right:0;border-bottom:1px solid var(--rule-soft)}
+    .insight-cell:last-child{border-bottom:0}
+    .calc-grid{grid-template-columns:repeat(2,1fr)}
+    .ldr-row{grid-template-columns:28px 1.4fr 1fr 50px 24px;gap:8px;padding:7px 12px}
+    .ldr-name{font-size:.87rem}
+    .calc-out{flex-direction:column}
+    .calc-out .big{flex:0 0 auto}
+    .caveat-grid{grid-template-columns:1fr}
+    .caveat-cell{border-right:0}
+    .caveat-cell:nth-last-child(2){border-bottom:1px solid var(--rule-soft)}
+  }
+</style>
 </head>
 <body>
+<div class="wrap">
 
-<nav class="site-nav">
-  <div class="nav-inner">
-    <span class="nav-brand">NBA Rookie Defensive Model</span>
-    <div class="nav-links">
-      <a href="#model">Model</a>
-      <a href="#insights">Insights</a>
-      <a href="#leaderboard">Leaderboard</a>
-      <a href="#calculator">Calculator</a>
-      <a href="#coefficients">Coefficients</a>
-      <a href="#caveats">Caveats</a>
+  <header class="mast">
+    <div class="mast-brand"><span class="dot"></span>Rookie Defensive Forecast</div>
+    <div class="mast-meta">2026 Draft Class</div>
+  </header>
+
+  <section class="hero">
+    <div class="kicker">A Combine-Only Model · 2023–2025 · n = 89</div>
+    <h1 class="title">Which 2026 rookies will <span class="hl">actually defend?</span></h1>
+    <p class="dek">A five-variable linear model trained on three rookie classes (2023–2025) uses pre-draft <strong style="color:var(--ink)">weight, hand width, standing vertical, lane agility, and wingspan</strong> to project rookie-year Defensive BPM &mdash; restricted to rookies who actually saw the floor for at least 100 NBA minutes. Meant as a scouting prompt, not a verdict.</p>
+    <div class="byline">
+      <span><strong>Author</strong> Charlie Danoff</span>
+      <span><strong>Method</strong> OLS regression · 5 predictors</span>
+      <span><strong>Source</strong> NBA Draft Combine &amp; Basketball Reference</span>
+    </div>
+
+    <div class="stat-strip">
+      <div><div class="label">Training n</div><div class="val">89</div><div class="sub">rookies, MP ≥ 100</div></div>
+      <div><div class="label">R²</div><div class="val">0.233</div><div class="sub">variance explained</div></div>
+      <div><div class="label">Adj. R²</div><div class="val">0.187</div><div class="sub">penalized for 5 inputs</div></div>
+      <div><div class="label">RMSE</div><div class="val">0.91</div><div class="sub">DBPM points</div></div>
+    </div>
+    <div class="formula-strip">
+      <span class="tag">Model</span>
+      <span id="formulaText"></span>
+    </div>
+  </section>
+
+  <!-- I · Diagnostics: coefficients + 2025 backtest -->
+  <div class="section-head">
+    <h2><span class="num">1</span>What the model is saying</h2>
+    <div class="meta">Standardized effect · 2025 backtest</div>
+  </div>
+  <div class="diag-row">
+    <div class="pane">
+      <div class="pane-head"><div class="t">Feature <b>·</b> Effect per σ</div><div class="m">|β|·σ on DBPM</div></div>
+      <div class="pane-body">
+        <div class="coef-list" id="coefList"></div>
+        <div class="coef-foot"><span>← helps less / opposite sign</span><span>helps more →</span></div>
+        <div class="coef-note"><strong>Weight</strong> is the cleanest signal in the new model (p = 0.003), followed by <strong>hand width</strong> (p = 0.037). Wingspan is statistically negative &mdash; most likely an artefact of body-size overlap, not a real defensive penalty.</div>
+      </div>
+    </div>
+    <div class="pane">
+      <div class="pane-head"><div class="t">2023–25 Backtest <b>·</b> Actual vs Predicted</div><div class="m">n = 89 · y = x dashed</div></div>
+      <div class="pane-body">
+        <svg id="scatter" viewBox="0 0 800 460" preserveAspectRatio="xMidYMid meet"></svg>
+        <p class="chart-cap"><strong>Read it like this:</strong> dots above the dashed line outperformed their combine profile; dots below underperformed. The model gets the order roughly right at the extremes but is noisy in the middle. That's what an R² of 0.23 looks like.</p>
+      </div>
     </div>
   </div>
-</nav>
 
-<main class="wrap">
+  <!-- II · Readings -->
+  <div class="section-head">
+    <h2><span class="num">2</span>Reading the coefficients</h2>
+    <div class="meta">Two takeaways · 60 seconds</div>
+  </div>
+  <div class="insight-grid" style="grid-template-columns:repeat(2,1fr)">
+    <div class="insight-cell">
+      <div class="insight-num">Reading I · Mass over length</div>
+      <div class="insight-text">A <strong>10-pound</strong> increase in weight lines up with about <strong>+0.22 DBPM</strong> &mdash; the strongest signal in the model (p = 0.003). After three years of rookie data, <em>functional physicality</em> &mdash; the body that can survive NBA contact &mdash; beats raw length.</div>
+    </div>
+    <div class="insight-cell">
+      <div class="insight-num">Reading II · Hand width is real</div>
+      <div class="insight-text">Each extra inch of hand width is worth roughly <strong>+0.39 DBPM</strong> (p = 0.037). Wider hands plausibly translate to <strong>deflections, contests, and rebound control</strong> &mdash; ball-disruption defense, not rim protection.</div>
+    </div>
+  </div>
 
-  <!-- Hero -->
-  <section id="model" class="section">
-    <div class="hero">
-      <div class="card hero-main">
-        <p class="eyebrow">NBA Draft Combine · Defensive Analytics · 2026</p>
-        <h1>Predict Rookie Defensive BPM</h1>
-        <p class="hero-sub">An exploratory combine-only model projecting 2026 rookie defensive impact from pre-draft physical and agility measurements.</p>
-        <div class="formula-box mono" id="formulaText"></div>
+  <!-- III · Leaderboard -->
+  <div class="section-head">
+    <h2><span class="num">3</span>The 2026 leaderboard</h2>
+    <div class="meta">Sortable · <span id="visCount">0</span> shown</div>
+  </div>
+  <div class="ldr" id="ldr">
+    <div class="ldr-tools">
+      <input type="search" id="search" placeholder="Search players…" autocomplete="off"/>
+      <div class="seg" id="clsSeg">
+        <button data-cls="proj" class="on">2026 Board</button>
+        <button data-cls="train">2023–25 Training</button>
+        <button data-cls="all">All</button>
       </div>
-      <div class="card hero-side">
-        <div class="metric"><span class="metric-label">Training n</span><strong class="metric-val">41</strong></div>
-        <div class="metric"><span class="metric-label">R²</span><strong class="metric-val">0.258</strong></div>
-        <div class="metric"><span class="metric-label">Adj R²</span><strong class="metric-val">0.176</strong></div>
-        <div class="metric"><span class="metric-label">RMSE</span><strong class="metric-val">1.487</strong></div>
+      <div class="seg" id="sortSeg">
+        <button data-sort="pred" class="on">Sort: Pred</button>
+        <button data-sort="weight">Weight</button>
+        <button data-sort="hand">Hand</button>
+        <button data-sort="player">A–Z</button>
+      </div>
+      <div class="seg" id="gemSeg">
+        <button data-gem="off" class="on">All</button>
+        <button data-gem="on" class="gem">Gems ★</button>
       </div>
     </div>
-  </section>
+    <div class="ldr-body" id="ldrBody"></div>
+  </div>
 
-  <!-- Insights -->
-  <section id="insights" class="section">
-    <div class="insights-grid">
-      <div class="card insight-card">
-        <h2>Top 2026 Projections</h2>
-        <div id="topBars" class="bar-list"></div>
+  <!-- IV · Calculator -->
+  <div class="section-head">
+    <h2><span class="num">4</span>Try a prospect</h2>
+    <div class="meta">Edit any cell &mdash; the prediction updates live</div>
+  </div>
+  <div class="calc">
+    <div class="calc-grid" style="grid-template-columns:repeat(5,1fr)">
+      <label>Weight (lbs)
+        <input id="cWeight" type="number" step="0.1" value="225"/>
+      </label>
+      <label>Hand Width (in)
+        <input id="cHand" type="number" step="0.25" value="9.75"/>
+      </label>
+      <label>Standing Vert. (in)
+        <input id="cVert" type="number" step="0.5" value="30"/>
+      </label>
+      <label>Lane Agility (s)
+        <input id="cLane" type="number" step="0.01" value="11.10"/>
+      </label>
+      <label>Wingspan (in)
+        <input id="cWing" type="number" step="0.25" value="83"/>
+      </label>
+    </div>
+    <div class="calc-out">
+      <div class="big">
+        <div class="lab">Pred. DBPM</div>
+        <div class="num" id="calcPred">—</div>
       </div>
-      <div class="card insight-card">
-        <h2>2025 Actual vs Predicted DBPM</h2>
-        <svg id="scatter" class="scatter" role="img" aria-label="Scatterplot of actual vs predicted DBPM for 2025 training players"></svg>
-        <p class="note-sm" style="margin-top:.5rem">Green = outperformed model · Red = underperformed · Dashed line = perfect prediction</p>
+      <div class="desc">
+        <div class="lab">Interpretation</div>
+        <div class="txt" id="calcComment">A neutral combine line.</div>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- Leaderboard -->
-  <section id="leaderboard" class="section">
-    <div class="card">
-      <div class="controls-bar">
-        <div class="controls-left">
-          <input id="searchInput" type="search" class="search-input" placeholder="Search players…" aria-label="Search players" />
-          <select id="classFilter" class="sel" aria-label="Filter by class">
-            <option value="all">All rows</option>
-            <option value="2026 Projection">2026 Projections</option>
-            <option value="2025 Training">2025 Training</option>
-            <option value="Custom Projection">Custom</option>
-          </select>
-          <select id="dbpmFilter" class="sel" aria-label="Filter by DBPM">
-            <option value="all">Any DBPM</option>
-            <option value="positive">Predicted ≥ 0</option>
-            <option value="top10">Top 10 (2026)</option>
-          </select>
-          <label class="gem-label">
-            <input id="gemToggle" type="checkbox" />
-            Gems only 💎
-          </label>
-        </div>
-        <div class="controls-right">
-          <button id="exportBtn" class="btn">Export CSV</button>
-          <button id="restoreBtn" class="btn">Restore data</button>
-        </div>
-      </div>
-      <div class="stats-bar">
-        <div class="stat-cell"><div class="stat-label">Total rows</div><div id="statTotal" class="stat-val">—</div></div>
-        <div class="stat-cell"><div class="stat-label">Visible</div><div id="statVisible" class="stat-val">—</div></div>
-        <div class="stat-cell"><div class="stat-label">Gems 💎</div><div id="statGems" class="stat-val good">—</div></div>
-        <div class="stat-cell"><div class="stat-label">Median pred</div><div id="statMedian" class="stat-val">—</div></div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr id="thead"></tr></thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-      <div id="mobileCards" class="mobile-cards"></div>
+  <!-- V · Caveats -->
+  <div class="section-head">
+    <h2><span class="num">5</span>What this isn't</h2>
+    <div class="meta">Read before quoting</div>
+  </div>
+  <div style="border:1px solid var(--rule);background:#fff;border-left:4px solid var(--orange);padding:14px 18px;font-size:1rem;line-height:1.6;color:var(--ink-2);margin-bottom:12px">
+    This is an <strong style="color:var(--ink)">exploratory</strong> model trained on 89 rookies across three draft classes (2023–2025). DBPM is a noisy outcome shaped by team context, role, scheme, and minutes. The model explains roughly a quarter of the variance in rookie DBPM. Treat individual numbers as a <strong style="color:var(--ink)">conversation starter</strong>, never a final grade.
+  </div>
+  <div class="caveat-grid">
+    <div class="caveat-cell"><div class="lbl">Sample size</div><div class="body">89 rookies passed the 100-minute filter across three classes &mdash; useful but still small for inference.</div></div>
+    <div class="caveat-cell"><div class="lbl">Significance</div><div class="body">Weight (p = 0.003) and hand width (p = 0.037) are significant. Wingspan's negative sign is significant but most likely a multicollinearity artefact.</div></div>
+    <div class="caveat-cell"><div class="lbl">Missing inputs</div><div class="body">Skill, IQ, motor, scheme, role &mdash; all of it lives outside this model. Position labels are intentionally excluded.</div></div>
+    <div class="caveat-cell"><div class="lbl">Survivorship</div><div class="body">Training is restricted to rookies with MP ≥ 100. Washouts are out; the bar will bend upward.</div></div>
+  </div>
+
+  <!-- 6 · Sources -->
+  <div class="section-head">
+    <h2><span class="num">6</span>Sources &amp; bibliography</h2>
+    <div class="meta">Where the numbers came from</div>
+  </div>
+  <div class="src-list">
+    <div class="src-row">
+      <div class="src-name">NBA Draft Combine</div>
+      <div class="src-desc">Official anthropometric &amp; agility measurements: weight, wingspan, hand width, standing vertical leap, lane agility time.</div>
+      <a class="src-link" href="https://www.nba.com/stats/draft/combine-anthro" target="_blank" rel="noopener">nba.com/stats ↗</a>
     </div>
-  </section>
-
-  <!-- Calculator -->
-  <section id="calculator" class="section">
-    <div class="card calc-wrap">
-      <p class="eyebrow">Live prediction calculator</p>
-      <h2>Evaluate a custom prospect</h2>
-      <div class="calc-grid">
-        <label class="field">Player name<input id="calcName" type="text" value="Custom Prospect" /></label>
-        <label class="field">Wingspan (in)<input id="calcWingspan" type="number" step="0.01" value="84.50" /></label>
-        <label class="field">Lane agility (s)<input id="calcLane" type="number" step="0.01" value="11.00" /></label>
-        <label class="field">Shuttle run (s)<input id="calcShuttle" type="number" step="0.01" value="2.90" /></label>
-        <label class="field">Hand width (in)<input id="calcHand" type="number" step="0.01" value="9.75" /></label>
-      </div>
-      <div class="calc-result">
-        <div>
-          <div class="note-sm">Predicted DBPM</div>
-          <div class="calc-dbpm mono" id="calcResult">—</div>
-          <div class="note-sm" id="calcContext"></div>
-        </div>
-        <div class="calc-actions">
-          <button id="addCustomBtn" class="btn btn-primary">Add to board</button>
-          <button id="resetCalcBtn" class="btn">Reset</button>
-        </div>
-      </div>
+    <div class="src-row">
+      <div class="src-name">Basketball Reference</div>
+      <div class="src-desc">Rookie-year Defensive Box Plus/Minus (DBPM) and minutes played for the 2024–25 season.</div>
+      <a class="src-link" href="https://www.basketball-reference.com/" target="_blank" rel="noopener">basketball-reference.com ↗</a>
     </div>
-  </section>
-
-  <!-- Coefficients -->
-  <section id="coefficients" class="section">
-    <div class="card section-card">
-      <p class="eyebrow">Model details</p>
-      <h2>Coefficient table</h2>
-      <div style="overflow-x:auto">
-        <table>
-          <thead><tr>
-            <th style="cursor:default">Predictor</th>
-            <th style="cursor:default">Coefficient</th>
-            <th style="cursor:default">p-value</th>
-            <th style="cursor:default">Interpretation</th>
-          </tr></thead>
-          <tbody>
-            <tr><td><span class="mono">Wingspan_in</span></td><td class="mono good">+0.066</td><td class="mono">0.404</td><td>Longer wingspan → higher DBPM; not statistically significant.</td></tr>
-            <tr><td><span class="mono">Lane_Agility_Time</span></td><td class="mono good">+0.639</td><td class="mono">0.389</td><td>Counterintuitive positive sign; not significant — interpret cautiously.</td></tr>
-            <tr><td><span class="mono">Shuttle_Run</span></td><td class="mono bad">−3.392</td><td class="mono">0.062</td><td>Strongest signal: faster shuttle → higher DBPM (marginally significant).</td></tr>
-            <tr><td><span class="mono">Hand_Width</span></td><td class="mono good">+0.629</td><td class="mono">0.156</td><td>Wider hands may aid ball disruption; positive trend, not significant.</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-top:1.1rem">
-        <div class="metric"><span class="metric-label">n</span><strong class="metric-val" style="font-size:1.3rem">41</strong></div>
-        <div class="metric"><span class="metric-label">R²</span><strong class="metric-val" style="font-size:1.3rem">0.258</strong></div>
-        <div class="metric"><span class="metric-label">Adj R²</span><strong class="metric-val" style="font-size:1.3rem">0.176</strong></div>
-        <div class="metric"><span class="metric-label">AIC</span><strong class="metric-val" style="font-size:1.3rem">158.9</strong></div>
-        <div class="metric"><span class="metric-label">RMSE</span><strong class="metric-val" style="font-size:1.3rem">1.487</strong></div>
-      </div>
+    <div class="src-row">
+      <div class="src-name">DBPM, the stat</div>
+      <div class="src-desc">Daniel Myers&rsquo; original Box Plus/Minus methodology &mdash; the defensive component of the rate-stat framework used here.</div>
+      <a class="src-link" href="https://www.basketball-reference.com/about/bpm2.html" target="_blank" rel="noopener">BBR methodology ↗</a>
     </div>
-  </section>
-
-  <!-- Caveats -->
-  <section id="caveats" class="section" style="padding-bottom:1rem">
-    <div class="card section-card caveat">
-      <p class="eyebrow">Use with care</p>
-      <h2>Model caveats</h2>
-      <p style="margin:0;color:var(--muted)">This is an exploratory model trained on one 2025 rookie sample of 41 players. DBPM is a noisy outcome shaped by team context, role, and playing time. The model explains ~26% of variance (adj. R² = 17.6%) with an RMSE of 1.49 DBPM points. No predictor reaches p &lt; 0.05 — Shuttle_Run is marginal at p = 0.062. Treat projections as a conversation starter, not a final grade.</p>
+    <div class="src-row">
+      <div class="src-name">Method</div>
+      <div class="src-desc">Ordinary least squares (OLS) regression in Python, trained on 2023–2025 draft classes restricted to rookies with at least 100 NBA minutes (n = 89). Five predictors, intercept fit.</div>
+      <a class="src-link" href="#" target="_blank" rel="noopener">Notebook (TBD) ↗</a>
     </div>
-  </section>
+  </div>
 
-</main>
+  <!-- 7 · More by Charlie Danoff -->
+  <div class="section-head">
+    <h2><span class="num">7</span>More basketball analysis by Charlie Danoff</h2>
+    <div class="meta">Read next</div>
+  </div>
+  <div class="more-grid">
+    <a class="more-card featured" href="#" target="_blank" rel="noopener">
+      <div class="kic">Newsletter</div>
+      <div class="ttl">Subscribe on Substack</div>
+      <div class="desc">Get the next combine model, board, and post-draft retrospective in your inbox.</div>
+      <div class="go">Subscribe</div>
+    </a>
+    <a class="more-card" href="#" target="_blank" rel="noopener">
+      <div class="kic">Companion piece</div>
+      <div class="ttl">How I built the DBPM model</div>
+      <div class="desc">A walkthrough of the data pull, why these four variables made the cut, and what got dropped.</div>
+      <div class="go">Read</div>
+    </a>
+    <a class="more-card" href="#" target="_blank" rel="noopener">
+      <div class="kic">Archive</div>
+      <div class="ttl">All basketball posts</div>
+      <div class="desc">Combine deep-dives, draft retros, and other small-n basketball experiments.</div>
+      <div class="go">Browse</div>
+    </a>
+  </div>
 
-<footer class="site-footer">
-  Static, no-backend app · Data: 2025 NBA Draft Combine + Basketball Reference · Model: OLS regression (n = 41) · Built May 2026
-</footer>
+  <footer>
+    <div>Rookie Defensive Forecast · Static, no-backend</div>
+    <div>Built May 2026 · OLS · 5 predictors · n = 89</div>
+  </footer>
+</div>
 
+<script src="data.js"></script>
 <script>
-const MODEL = {
-  intercept:-8.895696, wingspan:0.065647, lane:0.638983, shuttle:-3.392342, hand:0.628937,
-  n:41, r2:0.258, adjR2:0.176, rmse:1.487
-};
+(() => {
+  const M = window.DBPM_MODEL;
+  const FEAT = window.DBPM_FEATURES;
+  const PLAYERS = window.DBPM_PLAYERS.map(p => ({...p, pred: (p.pred ?? window.DBPM_PREDICT(p))}));
+  document.getElementById('formulaText').textContent = M.formula;
 
-const SEED = [
-  {player:"Ace Bailey",cls:"2025 Training",wingspan:84.5,lane:10.97,shuttle:2.78,hand:9.0,actual:-2.5,minutes:1988},
-  {player:"Asa Newell",cls:"2025 Training",wingspan:83.25,lane:10.95,shuttle:2.78,hand:10.0,actual:-0.5,minutes:500},
-  {player:"Carter Bryant",cls:"2025 Training",wingspan:83.75,lane:11.25,shuttle:3.14,hand:9.5,actual:0.2,minutes:818},
-  {player:"Cedric Coward",cls:"2025 Training",wingspan:86.25,lane:10.97,shuttle:3.02,hand:10.0,actual:-0.6,minutes:1598},
-  {player:"Chaz Lanier",cls:"2025 Training",wingspan:81.0,lane:10.53,shuttle:2.96,hand:9.75,actual:-1.3,minutes:262},
-  {player:"Collin Murray-Boyles",cls:"2025 Training",wingspan:84.75,lane:11.21,shuttle:2.86,hand:10.25,actual:1.5,minutes:1246},
-  {player:"Cooper Flagg",cls:"2025 Training",wingspan:84.0,lane:10.64,shuttle:2.92,hand:9.75,actual:0.4,minutes:2344},
-  {player:"Danny Wolf",cls:"2025 Training",wingspan:86.25,lane:11.26,shuttle:2.91,hand:9.75,actual:-0.3,minutes:1187},
-  {player:"Derik Queen",cls:"2025 Training",wingspan:84.5,lane:12.45,shuttle:3.27,hand:9.5,actual:0.7,minutes:2023},
-  {player:"Drake Powell",cls:"2025 Training",wingspan:84.0,lane:10.71,shuttle:2.79,hand:10.0,actual:-1.3,minutes:1320},
-  {player:"Dylan Harper",cls:"2025 Training",wingspan:82.5,lane:11.07,shuttle:3.05,hand:9.25,actual:1.1,minutes:1558},
-  {player:"Egor Demin",cls:"2025 Training",wingspan:82.25,lane:11.31,shuttle:2.93,hand:9.25,actual:-0.7,minutes:1308},
-  {player:"Grant Nelson",cls:"2025 Training",wingspan:84.0,lane:10.51,shuttle:2.58,hand:9.75,actual:4.8,minutes:35},
-  {player:"Hansen Yang",cls:"2025 Training",wingspan:86.75,lane:11.79,shuttle:3.01,hand:11.25,actual:-0.6,minutes:300},
-  {player:"Hunter Sallis",cls:"2025 Training",wingspan:82.0,lane:10.99,shuttle:2.94,hand:9.75,actual:-2.9,minutes:26},
-  {player:"Jamir Watkins",cls:"2025 Training",wingspan:83.25,lane:11.19,shuttle:3.21,hand:9.75,actual:-0.5,minutes:1032},
-  {player:"Jase Richardson",cls:"2025 Training",wingspan:78.0,lane:10.97,shuttle:3.08,hand:9.5,actual:-0.7,minutes:587},
-  {player:"Javon Small",cls:"2025 Training",wingspan:76.75,lane:10.74,shuttle:2.87,hand:9.75,actual:-0.6,minutes:830},
-  {player:"Jeremiah Fears",cls:"2025 Training",wingspan:77.25,lane:10.95,shuttle:3.09,hand:9.25,actual:-1.3,minutes:2112},
-  {player:"Joan Beringer",cls:"2025 Training",wingspan:88.5,lane:11.44,shuttle:2.97,hand:10.0,actual:0.2,minutes:314},
-  {player:"John Tonje",cls:"2025 Training",wingspan:81.0,lane:11.14,shuttle:3.21,hand:9.5,actual:1.2,minutes:42},
-  {player:"Johni Broome",cls:"2025 Training",wingspan:84.25,lane:11.52,shuttle:3.23,hand:10.25,actual:-4.4,minutes:55},
-  {player:"Kam Jones",cls:"2025 Training",wingspan:78.0,lane:11.42,shuttle:3.11,hand:8.5,actual:-1.9,minutes:616},
-  {player:"Kasparas Jakucionis",cls:"2025 Training",wingspan:79.75,lane:10.99,shuttle:2.82,hand:9.75,actual:0.6,minutes:945},
-  {player:"Khaman Maluach",cls:"2025 Training",wingspan:90.75,lane:12.05,shuttle:3.44,hand:10.25,actual:0.0,minutes:411},
-  {player:"Koby Brea",cls:"2025 Training",wingspan:77.25,lane:11.4,shuttle:3.23,hand:9.25,actual:-1.4,minutes:84},
-  {player:"Kon Knueppel",cls:"2025 Training",wingspan:78.25,lane:11.92,shuttle:2.92,hand:9.75,actual:-0.4,minutes:2551},
-  {player:"Liam McNeeley",cls:"2025 Training",wingspan:80.5,lane:11.11,shuttle:2.75,hand:10.0,actual:0.0,minutes:368},
-  {player:"Maxime Raynaud",cls:"2025 Training",wingspan:85.25,lane:11.31,shuttle:3.16,hand:10.25,actual:-1.6,minutes:1964},
-  {player:"Nique Clifford",cls:"2025 Training",wingspan:80.0,lane:10.87,shuttle:2.96,hand:8.5,actual:-1.2,minutes:1882},
-  {player:"Rasheer Fleming",cls:"2025 Training",wingspan:89.25,lane:10.95,shuttle:2.72,hand:9.5,actual:-0.7,minutes:673},
-  {player:"Rocco Zikarsky",cls:"2025 Training",wingspan:88.75,lane:11.92,shuttle:3.0,hand:9.75,actual:1.7,minutes:36},
-  {player:"Ryan Kalkbrenner",cls:"2025 Training",wingspan:90.0,lane:12.05,shuttle:3.1,hand:11.25,actual:1.3,minutes:1479},
-  {player:"Sion James",cls:"2025 Training",wingspan:78.5,lane:10.91,shuttle:2.93,hand:9.25,actual:1.1,minutes:1843},
-  {player:"Tre Johnson",cls:"2025 Training",wingspan:82.25,lane:10.49,shuttle:3.11,hand:8.0,actual:-2.9,minutes:1443},
-  {player:"Tyrese Proctor",cls:"2025 Training",wingspan:79.25,lane:10.75,shuttle:3.0,hand:9.0,actual:-0.5,minutes:545},
-  {player:"VJ Edgecombe",cls:"2025 Training",wingspan:79.5,lane:11.27,shuttle:2.93,hand:9.5,actual:-0.1,minutes:2623},
-  {player:"Vladislav Goldin",cls:"2025 Training",wingspan:89.25,lane:11.76,shuttle:2.95,hand:11.75,actual:4.5,minutes:24},
-  {player:"Walter Clayton Jr.",cls:"2025 Training",wingspan:76.0,lane:10.52,shuttle:2.81,hand:9.75,actual:-2.1,minutes:1410},
-  {player:"Will Riley",cls:"2025 Training",wingspan:80.75,lane:11.73,shuttle:3.08,hand:9.0,actual:-2.6,minutes:1633},
-  {player:"Yanic Konan Niederhauser",cls:"2025 Training",wingspan:87.25,lane:11.45,shuttle:2.84,hand:9.0,actual:0.4,minutes:424},
-  // 2026 Projections
-  {player:"Flory Bidunga",cls:"2026 Projection",wingspan:87.25,lane:11.24,shuttle:2.78,hand:10.5,actual:null,minutes:null},
-  {player:"Reuben Chinyelu",cls:"2026 Projection",wingspan:91.5,lane:11.21,shuttle:2.85,hand:10.25,actual:null,minutes:null},
-  {player:"Trevon Brazile",cls:"2026 Projection",wingspan:87.75,lane:10.84,shuttle:2.71,hand:10.25,actual:null,minutes:null},
-  {player:"Karim Lopez",cls:"2026 Projection",wingspan:83.5,lane:11.14,shuttle:2.88,hand:11.0,actual:null,minutes:null},
-  {player:"Tarris Reed Jr.",cls:"2026 Projection",wingspan:88.25,lane:11.03,shuttle:2.77,hand:10.0,actual:null,minutes:null},
-  {player:"Baba Miller",cls:"2026 Projection",wingspan:85.75,lane:10.71,shuttle:2.7,hand:10.0,actual:null,minutes:null},
-  {player:"Aaron Nkrumah",cls:"2026 Projection",wingspan:82.25,lane:11.18,shuttle:2.48,hand:8.5,actual:null,minutes:null},
-  {player:"Zuby Ejiofor",cls:"2026 Projection",wingspan:86.0,lane:11.05,shuttle:2.76,hand:9.75,actual:null,minutes:null},
-  {player:"Yaxel Lendeborg",cls:"2026 Projection",wingspan:87.25,lane:10.82,shuttle:2.8,hand:10.0,actual:null,minutes:null},
-  {player:"Matthew Able",cls:"2026 Projection",wingspan:80.25,lane:11.08,shuttle:2.86,hand:10.5,actual:null,minutes:null},
-  {player:"Hannes Steinbach",cls:"2026 Projection",wingspan:86.25,lane:10.9,shuttle:2.89,hand:10.0,actual:null,minutes:null},
-  {player:"Christopher Cenac Jr.",cls:"2026 Projection",wingspan:89.0,lane:10.76,shuttle:2.84,hand:9.5,actual:null,minutes:null},
-  {player:"Nathaniel Ament",cls:"2026 Projection",wingspan:83.5,lane:11.27,shuttle:2.85,hand:9.5,actual:null,minutes:null},
-  {player:"Izaiyah Nelson",cls:"2026 Projection",wingspan:86.5,lane:11.22,shuttle:2.9,hand:9.5,actual:null,minutes:null},
-  {player:"Morez Johnson",cls:"2026 Projection",wingspan:87.5,lane:10.59,shuttle:2.91,hand:10.0,actual:null,minutes:null},
-  {player:"Joshua Jefferson",cls:"2026 Projection",wingspan:82.75,lane:11.91,shuttle:3.08,hand:10.0,actual:null,minutes:null},
-  {player:"Henri Veesaar",cls:"2026 Projection",wingspan:86.0,lane:11.2,shuttle:2.92,hand:9.5,actual:null,minutes:null},
-  {player:"Tyler Nickel",cls:"2026 Projection",wingspan:80.5,lane:10.88,shuttle:2.85,hand:10.0,actual:null,minutes:null},
-  {player:"Jacob Cofie",cls:"2026 Projection",wingspan:84.0,lane:11.3,shuttle:2.92,hand:9.5,actual:null,minutes:null},
-  {player:"Tounde Yessoufou",cls:"2026 Projection",wingspan:82.0,lane:11.09,shuttle:2.75,hand:9.0,actual:null,minutes:null},
-  {player:"Ugonna Onyenso",cls:"2026 Projection",wingspan:88.75,lane:11.56,shuttle:3.16,hand:10.0,actual:null,minutes:null},
-  {player:"Nick Martinelli",cls:"2026 Projection",wingspan:82.0,lane:11.01,shuttle:2.88,hand:9.75,actual:null,minutes:null},
-  {player:"Andrej Stojakovic",cls:"2026 Projection",wingspan:80.25,lane:10.97,shuttle:2.89,hand:10.0,actual:null,minutes:null},
-  {player:"Isaiah Evans",cls:"2026 Projection",wingspan:80.75,lane:11.87,shuttle:2.89,hand:9.0,actual:null,minutes:null},
-  {player:"Dillon Mitchell",cls:"2026 Projection",wingspan:82.5,lane:10.94,shuttle:2.89,hand:9.75,actual:null,minutes:null},
-  {player:"Otega Oweh",cls:"2026 Projection",wingspan:80.25,lane:11.2,shuttle:2.86,hand:9.5,actual:null,minutes:null},
-  {player:"Tobe Awaka",cls:"2026 Projection",wingspan:86.25,lane:10.94,shuttle:3.02,hand:10.0,actual:null,minutes:null},
-  {player:"Cameron Boozer",cls:"2026 Projection",wingspan:85.5,lane:11.06,shuttle:2.99,hand:9.75,actual:null,minutes:null},
-  {player:"Rafael Castro",cls:"2026 Projection",wingspan:85.25,lane:11.42,shuttle:2.93,hand:9.0,actual:null,minutes:null},
-  {player:"Kingston Flemings",cls:"2026 Projection",wingspan:75.5,lane:10.61,shuttle:2.69,hand:9.5,actual:null,minutes:null},
-  {player:"Bennett Stirtz",cls:"2026 Projection",wingspan:78.0,lane:11.25,shuttle:2.91,hand:9.75,actual:null,minutes:null},
-  {player:"Cameron Carr",cls:"2026 Projection",wingspan:84.75,lane:10.46,shuttle:2.8,hand:9.25,actual:null,minutes:null},
-  {player:"Bryce Hopkins",cls:"2026 Projection",wingspan:82.5,lane:10.71,shuttle:2.95,hand:10.0,actual:null,minutes:null},
-  {player:"Milan Momcilovic",cls:"2026 Projection",wingspan:81.25,lane:11.22,shuttle:2.95,hand:9.5,actual:null,minutes:null},
-  {player:"Trey Kaufman-Renn",cls:"2026 Projection",wingspan:82.5,lane:11.06,shuttle:3.01,hand:9.75,actual:null,minutes:null},
-  {player:"Alex Karaban",cls:"2026 Projection",wingspan:83.0,lane:11.19,shuttle:3.01,hand:9.5,actual:null,minutes:null},
-  {player:"Tyler Tanner",cls:"2026 Projection",wingspan:76.25,lane:10.88,shuttle:2.92,hand:10.0,actual:null,minutes:null},
-  {player:"Darryn Peterson",cls:"2026 Projection",wingspan:81.75,lane:11.17,shuttle:2.95,hand:9.25,actual:null,minutes:null},
-  {player:"Malachi Moreno",cls:"2026 Projection",wingspan:85.5,lane:11.62,shuttle:3.11,hand:9.25,actual:null,minutes:null},
-  {player:"Caleb Wilson",cls:"2026 Projection",wingspan:84.25,lane:11.17,shuttle:3.11,hand:9.75,actual:null,minutes:null},
-  {player:"Allen Graves",cls:"2026 Projection",wingspan:84.0,lane:11.76,shuttle:3.18,hand:9.5,actual:null,minutes:null},
-  {player:"Felix Okpara",cls:"2026 Projection",wingspan:86.0,lane:11.01,shuttle:2.99,hand:9.0,actual:null,minutes:null},
-  {player:"Christopher Brown Jr",cls:"2026 Projection",wingspan:79.5,lane:10.57,shuttle:2.89,hand:9.5,actual:null,minutes:null},
-  {player:"Keyshawn Hall",cls:"2026 Projection",wingspan:82.25,lane:11.15,shuttle:3.1,hand:9.75,actual:null,minutes:null},
-  {player:"Anicet Dybantsa",cls:"2026 Projection",wingspan:84.5,lane:11.06,shuttle:2.99,hand:9.0,actual:null,minutes:null},
-  {player:"Ja'Kobi Gillespie",cls:"2026 Projection",wingspan:76.0,lane:10.94,shuttle:2.91,hand:9.5,actual:null,minutes:null},
-  {player:"Darius Acuff Jr.",cls:"2026 Projection",wingspan:78.5,lane:10.99,shuttle:2.93,hand:9.25,actual:null,minutes:null},
-  {player:"Maliq Brown",cls:"2026 Projection",wingspan:84.75,lane:11.22,shuttle:3.05,hand:9.0,actual:null,minutes:null},
-  {player:"Billy Richmond III",cls:"2026 Projection",wingspan:80.0,lane:10.23,shuttle:2.82,hand:9.25,actual:null,minutes:null},
-  {player:"Ryan Conwell",cls:"2026 Projection",wingspan:79.0,lane:10.69,shuttle:2.86,hand:9.0,actual:null,minutes:null},
-  {player:"Amari Allen",cls:"2026 Projection",wingspan:80.0,lane:10.72,shuttle:2.94,hand:9.25,actual:null,minutes:null},
-  {player:"Dailyn Swain",cls:"2026 Projection",wingspan:82.0,lane:11.25,shuttle:3.08,hand:9.25,actual:null,minutes:null},
-  {player:"Bruce Thornton",cls:"2026 Projection",wingspan:77.0,lane:11.55,shuttle:3.01,hand:9.0,actual:null,minutes:null},
-  {player:"Ebuka Okorie",cls:"2026 Projection",wingspan:79.75,lane:10.71,shuttle:2.96,hand:9.25,actual:null,minutes:null},
-  {player:"Keaton Wagler",cls:"2026 Projection",wingspan:78.25,lane:11.05,shuttle:3.0,hand:9.25,actual:null,minutes:null},
-  {player:"Milos Uzan",cls:"2026 Projection",wingspan:77.0,lane:10.7,shuttle:2.87,hand:9.0,actual:null,minutes:null},
-  {player:"Aday Mara",cls:"2026 Projection",wingspan:90.0,lane:11.47,shuttle:3.36,hand:9.5,actual:null,minutes:null},
-  {player:"Brayden Burries",cls:"2026 Projection",wingspan:78.0,lane:10.59,shuttle:2.92,hand:9.25,actual:null,minutes:null},
-  {player:"Tobi Lawal",cls:"2026 Projection",wingspan:82.5,lane:11.15,shuttle:3.08,hand:9.0,actual:null,minutes:null},
-  {player:"Christian Anderson",cls:"2026 Projection",wingspan:78.25,lane:10.85,shuttle:2.85,hand:8.25,actual:null,minutes:null},
-  {player:"John Blackwell",cls:"2026 Projection",wingspan:74.25,lane:11.23,shuttle:3.08,hand:9.5,actual:null,minutes:null},
-  {player:"Labaron Philon",cls:"2026 Projection",wingspan:78.25,lane:11.55,shuttle:3.13,hand:9.0,actual:null,minutes:null},
-  {player:"Kylan Boswell",cls:"2026 Projection",wingspan:79.0,lane:10.82,shuttle:2.92,hand:8.5,actual:null,minutes:null},
-  {player:"Emanuel Sharp",cls:"2026 Projection",wingspan:75.0,lane:10.77,shuttle:2.8,hand:8.25,actual:null,minutes:null},
-  {player:"Peter Suder",cls:"2026 Projection",wingspan:80.0,lane:11.23,shuttle:3.14,hand:9.0,actual:null,minutes:null},
-  {player:"Koa Peat",cls:"2026 Projection",wingspan:83.25,lane:11.0,shuttle:3.39,hand:10.0,actual:null,minutes:null},
-  {player:"Braden Smith",cls:"2026 Projection",wingspan:75.25,lane:10.76,shuttle:2.87,hand:8.25,actual:null,minutes:null},
-  {player:"Jaden Bradley",cls:"2026 Projection",wingspan:78.25,lane:10.75,shuttle:3.13,hand:9.25,actual:null,minutes:null},
-  {player:"Meleek Thomas",cls:"2026 Projection",wingspan:78.75,lane:11.57,shuttle:2.97,hand:7.5,actual:null,minutes:null},
-  {player:"Jeremy Fears Jr.",cls:"2026 Projection",wingspan:76.0,lane:10.62,shuttle:3.1,hand:9.0,actual:null,minutes:null},
-  {player:"Nicholas Boyd",cls:"2026 Projection",wingspan:74.5,lane:10.78,shuttle:3.06,hand:8.25,actual:null,minutes:null},
-  {player:"Jayden Quaintance",cls:"2026 Projection",wingspan:89.25,lane:null,shuttle:null,hand:11.0,actual:null,minutes:null},
-  {player:"Luigi Suigo",cls:"2026 Projection",wingspan:89.5,lane:null,shuttle:null,hand:10.5,actual:null,minutes:null},
-  {player:"Richie Saunders",cls:"2026 Projection",wingspan:80.75,lane:null,shuttle:null,hand:10.25,actual:null,minutes:null},
-  {player:"Tyler Bilodeau",cls:"2026 Projection",wingspan:84.75,lane:null,shuttle:null,hand:9.5,actual:null,minutes:null},
-];
-
-const LS_KEY = 'nba-dbpm-2026-v1';
-const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
-const fmt = (v,d=2) => (v===null||v===undefined||!Number.isFinite(+v)) ? '—' : (+v).toFixed(d);
-const isNum = v => v!==null && v!==undefined && Number.isFinite(+v);
-
-function predict(r) {
-  if (!isNum(r.wingspan)||!isNum(r.lane)||!isNum(r.shuttle)||!isNum(r.hand)) return null;
-  return MODEL.intercept + MODEL.wingspan*r.wingspan + MODEL.lane*r.lane + MODEL.shuttle*r.shuttle + MODEL.hand*r.hand;
-}
-
-function median(arr) {
-  if (!arr.length) return null;
-  const s = [...arr].sort((a,b)=>a-b), m = Math.floor(s.length/2);
-  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
-}
-
-let players = (() => {
-  try { const s=JSON.parse(localStorage.getItem(LS_KEY)); if(Array.isArray(s)&&s.length) return s; } catch {}
-  return structuredClone(SEED);
-})();
-
-function save() { localStorage.setItem(LS_KEY, JSON.stringify(players)); }
-
-function enrichAll() {
-  const rows = players.map(p => ({...p, predicted: predict(p)}));
-  const med = median(rows.filter(r=>r.cls==='2026 Projection'&&r.predicted!==null).map(r=>r.predicted));
-  return rows.map(r => ({...r, isGem: r.cls==='2026 Projection' && r.predicted!==null && med!==null && r.predicted>med}));
-}
-
-function filteredRows(all) {
-  const q = document.getElementById('searchInput').value.trim().toLowerCase();
-  const cls = document.getElementById('classFilter').value;
-  const dbpm = document.getElementById('dbpmFilter').value;
-  const gem = document.getElementById('gemToggle').checked;
-  let rows = all.slice();
-  if (q) rows = rows.filter(r=>r.player.toLowerCase().includes(q));
-  if (cls!=='all') rows = rows.filter(r=>r.cls===cls);
-  if (dbpm==='positive') rows = rows.filter(r=>r.predicted!==null&&r.predicted>=0);
-  if (gem) rows = rows.filter(r=>r.isGem);
-  rows.sort((a,b)=>cmp(a,b,sort.key,sort.dir));
-  if (dbpm==='top10') rows = rows.filter(r=>r.cls==='2026 Projection').slice(0,10);
-  return rows;
-}
-
-function cmp(a,b,key,dir) {
-  const av=a[key],bv=b[key], mod=dir==='asc'?1:-1;
-  if (av==null&&bv==null) return 0;
-  if (av==null) return 1; if (bv==null) return -1;
-  if (typeof av==='number'&&typeof bv==='number') return (av-bv)*mod;
-  return String(av).localeCompare(String(bv))*mod;
-}
-
-let sort = {key:'predicted', dir:'desc'};
-
-const COLS = [
-  {key:'player',label:'Player'},{key:'cls',label:'Class'},{key:'predicted',label:'Pred DBPM'},
-  {key:'actual',label:'Actual DBPM'},{key:'wingspan',label:'Wingspan (in)'},
-  {key:'lane',label:'Lane (s)'},{key:'shuttle',label:'Shuttle (s)'},{key:'hand',label:'Hand (in)'},
-  {key:'isGem',label:'💎'},
-];
-
-function pillCls(c) {
-  if (c==='2026 Projection') return 'pill-proj';
-  if (c==='Custom Projection') return 'pill-custom';
-  return 'pill-train';
-}
-
-function renderAll() {
-  const all = enrichAll();
-  const vis = filteredRows(all);
-  // stats
-  const preds = all.filter(r=>r.cls==='2026 Projection'&&r.predicted!==null).map(r=>r.predicted);
-  document.getElementById('statTotal').textContent = all.length;
-  document.getElementById('statVisible').textContent = vis.length;
-  document.getElementById('statGems').textContent = all.filter(r=>r.isGem).length;
-  document.getElementById('statMedian').textContent = median(preds)?.toFixed(2) ?? '—';
-  // table
-  const thead = document.getElementById('thead');
-  thead.innerHTML = COLS.map(c=>`<th data-key="${c.key}">${c.label}${sort.key===c.key?(sort.dir==='asc'?' ▲':' ▼'):''}</th>`).join('');
-  thead.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
-    const k=th.dataset.key;
-    sort = sort.key===k ? {key:k,dir:sort.dir==='asc'?'desc':'asc'} : {key:k,dir:['player','cls'].includes(k)?'asc':'desc'};
-    renderAll();
-  }));
-  const tbody = document.getElementById('tbody');
-  if (!vis.length) {
-    tbody.innerHTML=`<tr><td colspan="${COLS.length}" style="text-align:center;padding:2rem;color:var(--muted)">No players match filters.</td></tr>`;
-  } else {
-    tbody.innerHTML = vis.map(r=>{
-      const pc = r.predicted===null?'':(r.predicted>=0?'good':'bad');
-      const del = r.cls==='Custom Projection'?`<button class="btn" style="font-size:.68rem;padding:.18rem .45rem" data-del="${esc(r._id)}">✕</button>`:'';
-      return `<tr>
-        <td><strong>${esc(r.player)}</strong></td>
-        <td><span class="pill ${pillCls(r.cls)}">${esc(r.cls)}</span></td>
-        <td class="mono ${pc}">${fmt(r.predicted)}</td>
-        <td class="mono">${fmt(r.actual)}</td>
-        <td class="mono">${fmt(r.wingspan)}</td>
-        <td class="mono">${fmt(r.lane)}</td>
-        <td class="mono">${fmt(r.shuttle)}</td>
-        <td class="mono">${fmt(r.hand)}</td>
-        <td>${r.isGem?'💎':''} ${del}</td>
-      </tr>`;
-    }).join('');
-    tbody.querySelectorAll('[data-del]').forEach(btn=>btn.addEventListener('click',()=>{
-      players = players.filter(p=>p._id!==btn.dataset.del||p.cls!=='Custom Projection');
-      save(); renderAll();
-    }));
-  }
-  // mobile cards
-  document.getElementById('mobileCards').innerHTML = vis.map(r=>{
-    const pc = r.predicted===null?'':(r.predicted>=0?'good':'bad');
-    return `<div class="card" style="padding:.9rem">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
-        <div><strong>${esc(r.player)}</strong><div style="margin-top:.25rem"><span class="pill ${pillCls(r.cls)}">${esc(r.cls)}</span>${r.isGem?' 💎':''}</div></div>
-        <div style="text-align:right"><div class="note-sm">Pred DBPM</div><div class="mono ${pc}" style="font-size:1.35rem;font-weight:800">${fmt(r.predicted)}</div>${r.actual!==null?`<div class="note-sm">Actual: <span class="mono">${fmt(r.actual)}</span></div>`:''}</div>
+  // ---- coefficient ladder (standardized) ----
+  const coefList = document.getElementById('coefList');
+  const std = FEAT.map(f => ({...f, eff: f.coef * f.std}));
+  const mx = Math.max(...std.map(s => Math.abs(s.eff)));
+  coefList.innerHTML = std.map(s => {
+    const pct = (Math.abs(s.eff)/mx) * 50;
+    const left = s.eff < 0 ? `${50 - pct}%` : '50%';
+    return `<div class="coef-row">
+      <div class="nm">${s.label}</div>
+      <div class="bar">
+        <div class="fill ${s.eff<0?'neg':''}" style="left:${left};width:${pct}%"></div>
+        <div class="ax"></div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-top:.65rem">
-        ${[['Wing',fmt(r.wingspan)+'"'],['Lane',fmt(r.lane)+'s'],['Shut',fmt(r.shuttle)+'s'],['Hand',fmt(r.hand)+'"']].map(([l,v])=>`<div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.35rem;text-align:center"><div class="note-sm">${l}</div><div class="mono" style="font-size:.78rem">${v}</div></div>`).join('')}
-      </div>
+      <div class="v ${s.eff>0?'pos':'neg'}">${s.eff>0?'+':''}${s.eff.toFixed(2)}</div>
     </div>`;
   }).join('');
-  // bar chart
-  const top = all.filter(r=>r.cls==='2026 Projection'&&r.predicted!==null).sort((a,b)=>b.predicted-a.predicted).slice(0,10);
-  if (top.length) {
-    const mx=top[0].predicted, mn=top[top.length-1].predicted;
-    document.getElementById('topBars').innerHTML = top.map((r,i)=>{
-      const pct = mx===mn ? 80 : 20+((r.predicted-mn)/(mx-mn))*75;
-      return `<div class="bar-row"><span style="overflow:hidden;text-overflow:ellipsis">${i+1}. ${esc(r.player)}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span class="mono" style="text-align:right">${fmt(r.predicted)}</span></div>`;
-    }).join('');
+
+  const ldrBody = document.getElementById('ldrBody');
+  const visCount = document.getElementById('visCount');
+  let state = { sort:'pred', q:'', cls:'proj', gem:'off' };
+  const gems = new Set(JSON.parse(localStorage.getItem('dbpm-brief-gems')||'[]'));
+  const saveGems = () => localStorage.setItem('dbpm-brief-gems', JSON.stringify([...gems]));
+
+  function render(){
+    const q = state.q.trim().toLowerCase();
+    let rows = PLAYERS.filter(p => {
+      if (state.cls==='proj' && p.cls!=='2026 Projection') return false;
+      if (state.cls==='train' && !p.cls.startsWith('Training')) return false;
+      if (state.gem==='on' && !gems.has(p.player)) return false;
+      if (q && !p.player.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    rows.sort((a,b) => {
+      if (state.sort==='player') return a.player.localeCompare(b.player);
+      const k = state.sort;
+      const av=a[k], bv=b[k];
+      if (av==null && bv==null) return 0;
+      if (av==null) return 1; if (bv==null) return -1;
+      return bv - av;
+    });
+    visCount.textContent = rows.length;
+
+    // bar scaling — use absolute max across visible
+    const maxAbs = Math.max(0.5, ...rows.map(r => Math.abs(r.pred ?? 0)));
+    ldrBody.innerHTML = rows.map((p,i) => {
+      const pred = p.pred;
+      const predStr = pred == null ? '—' : (pred>0?'+':'') + pred.toFixed(2);
+      const cls = (pred ?? 0) >= 0 ? 'pos' : 'neg';
+      const pctW = pred == null ? 0 : (Math.abs(pred) / maxAbs) * 50;
+      const left = pred >= 0 ? '50%' : `${50 - pctW}%`;
+      const isGem = gems.has(p.player);
+      const clsMark = p.cls === '2026 Projection' ? 'cls-mark' : 'cls-mark training';
+      const yr = p.cls === '2026 Projection' ? "'26" : ("'" + (p.year || p.cls.replace('Training ','')).slice(-2));
+      return `<div class="ldr-row">
+        <div class="ldr-rank">${i+1}</div>
+        <div>
+          <div class="ldr-name"><span class="${clsMark}"></span>${p.player}</div>
+          <div class="ldr-meta">${yr} · wt ${p.weight?.toFixed(1) ?? '—'} · hand ${p.hand?.toFixed(2) ?? '—'} · vert ${p.vert?.toFixed(1) ?? '—'} · lane ${p.lane?.toFixed(2) ?? '—'} · wing ${p.wingspan?.toFixed(1) ?? '—'}</div>
+        </div>
+        <div class="ldr-bar">
+          <div class="axis"></div>
+          ${pred==null ? '' : `<div class="fill ${pred<0?'neg':''}" style="left:${left};width:${pctW}%"></div>`}
+        </div>
+        <div class="ldr-pred ${cls}">${predStr}</div>
+        <button class="gem-btn ${isGem?'on':''}" data-gem="${p.player}" title="Gem">★</button>
+      </div>`;
+    }).join('') || '<div class="ldr-row" style="grid-template-columns:1fr;color:#8a877f;text-align:center"><div>No players match.</div></div>';
   }
-  // scatter
-  renderScatter(all);
-  // calculator context
-  renderCalcContext(all);
-}
 
-function renderScatter(all) {
-  const svg = document.getElementById('scatter');
-  const W = svg.clientWidth||480, H=260, pad=40;
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  const rows = all.filter(r=>r.cls==='2025 Training'&&r.predicted!==null&&r.actual!==null);
-  if (!rows.length) return;
-  const vals = rows.flatMap(r=>[r.predicted,r.actual]);
-  const lo=Math.floor(Math.min(...vals)-.5), hi=Math.ceil(Math.max(...vals)+.5);
-  const xv=v=>pad+(v-lo)/(hi-lo)*(W-pad*1.9);
-  const yv=v=>H-pad-(v-lo)/(hi-lo)*(H-pad*1.8);
-  const ticks=[lo,0,hi].filter((v,i,a)=>a.indexOf(v)===i);
-  const grid=ticks.map(v=>`<line x1="${xv(v)}" x2="${xv(v)}" y1="16" y2="${H-pad}" stroke="#1e3350" stroke-dasharray="3 4"/>
-    <line x1="${pad}" x2="${W-16}" y1="${yv(v)}" y2="${yv(v)}" stroke="#1e3350" stroke-dasharray="3 4"/>
-    <text x="${xv(v)}" y="${H-8}" fill="#8ba5c2" font-size="10" text-anchor="middle">${v}</text>
-    <text x="8" y="${yv(v)+3}" fill="#8ba5c2" font-size="10">${v}</text>`).join('');
-  const diag=`<line x1="${xv(lo)}" y1="${yv(lo)}" x2="${xv(hi)}" y2="${yv(hi)}" stroke="#5cc8ff" stroke-dasharray="5 6" opacity=".4"/>`;
-  const dots=rows.map(r=>`<circle cx="${xv(r.predicted)}" cy="${yv(r.actual)}" r="5" fill="${r.actual>=r.predicted?'#6ef0a3':'#ff7a90'}" opacity=".82"><title>${esc(r.player)}: pred ${fmt(r.predicted)}, actual ${fmt(r.actual)}</title></circle>`).join('');
-  const ax=`<text x="${W/2}" y="${H}" fill="#8ba5c2" font-size="11" text-anchor="middle">Predicted DBPM</text>
-    <text x="13" y="${H/2}" fill="#8ba5c2" font-size="11" transform="rotate(-90 13 ${H/2})" text-anchor="middle">Actual DBPM</text>`;
-  svg.innerHTML=`<rect width="${W}" height="${H}" rx="14" fill="rgba(7,17,31,.5)"/>${grid}${diag}${dots}${ax}`;
-}
-
-function renderCalcContext(all) {
-  const row = {wingspan:+document.getElementById('calcWingspan').value, lane:+document.getElementById('calcLane').value, shuttle:+document.getElementById('calcShuttle').value, hand:+document.getElementById('calcHand').value};
-  const pred = predict(row);
-  const el = document.getElementById('calcResult');
-  el.textContent = pred===null ? '—' : pred.toFixed(2);
-  el.className = 'calc-dbpm mono'+(pred===null?'':(pred>=0?' good':' bad'));
-  const projs = (all||enrichAll()).filter(r=>r.cls==='2026 Projection'&&r.predicted!==null).sort((a,b)=>b.predicted-a.predicted);
-  const rank = pred!==null ? projs.filter(r=>r.predicted>pred).length+1 : null;
-  document.getElementById('calcContext').textContent = pred===null ? 'Enter all four measurements to compute.' : `Ranks ~#${rank} among ${projs.length} 2026 projections.`;
-}
-
-document.getElementById('formulaText').textContent =
-  `DBPM = ${MODEL.intercept.toFixed(4)} + ${MODEL.wingspan.toFixed(4)}×Wingspan + ${MODEL.lane.toFixed(4)}×LaneAgility ${MODEL.shuttle.toFixed(4)}×Shuttle + ${MODEL.hand.toFixed(4)}×HandWidth`;
-
-['calcWingspan','calcLane','calcShuttle','calcHand'].forEach(id=>
-  document.getElementById(id).addEventListener('input',()=>renderCalcContext()));
-
-document.getElementById('addCustomBtn').addEventListener('click',()=>{
-  const name=document.getElementById('calcName').value.trim()||'Custom Prospect';
-  const row={player:name,cls:'Custom Projection',_id:`custom:${Date.now()}`,
-    wingspan:+document.getElementById('calcWingspan').value,
-    lane:+document.getElementById('calcLane').value,
-    shuttle:+document.getElementById('calcShuttle').value,
-    hand:+document.getElementById('calcHand').value,
-    actual:null,minutes:null};
-  if (predict(row)===null){alert('Enter all four measurements first.');return;}
-  players.push(row); save(); renderAll();
-});
-
-document.getElementById('resetCalcBtn').addEventListener('click',()=>{
-  document.getElementById('calcName').value='Custom Prospect';
-  ['calcWingspan','calcLane','calcShuttle','calcHand'].forEach((id,i)=>{
-    document.getElementById(id).value=['84.50','11.00','2.90','9.75'][i];
+  ldrBody.addEventListener('click', e => {
+    const b = e.target.closest('.gem-btn'); if (!b) return;
+    const k = b.dataset.gem;
+    if (gems.has(k)) gems.delete(k); else gems.add(k);
+    saveGems(); render();
   });
-  renderCalcContext();
-});
+  document.getElementById('search').addEventListener('input', e => { state.q = e.target.value; render(); });
+  document.getElementById('clsSeg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-cls]'); if (!b) return;
+    state.cls = b.dataset.cls;
+    document.querySelectorAll('#clsSeg button').forEach(x=>x.classList.toggle('on', x===b));
+    render();
+  });
+  document.getElementById('sortSeg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-sort]'); if (!b) return;
+    state.sort = b.dataset.sort;
+    document.querySelectorAll('#sortSeg button').forEach(x=>x.classList.toggle('on', x===b));
+    render();
+  });
+  document.getElementById('gemSeg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-gem]'); if (!b) return;
+    state.gem = b.dataset.gem;
+    document.querySelectorAll('#gemSeg button').forEach(x=>x.classList.toggle('on', x===b));
+    render();
+  });
+  render();
 
-document.getElementById('exportBtn').addEventListener('click',()=>{
-  const rows=filteredRows(enrichAll());
-  const hdr=['Player','Class','Predicted_DBPM','Actual_DBPM','Wingspan_in','Lane_Agility_Time','Shuttle_Run','Hand_Width','Is_Gem'];
-  const lines=rows.map(r=>[r.player,r.cls,fmt(r.predicted),fmt(r.actual),fmt(r.wingspan),fmt(r.lane),fmt(r.shuttle),fmt(r.hand),r.isGem?'TRUE':'FALSE']);
-  const csv=[hdr,...lines].map(row=>row.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download='rookie-dbpm-2026.csv'; a.click(); URL.revokeObjectURL(a.href);
-});
+  // calc — 5 inputs
+  const cWeight=document.getElementById('cWeight'),
+        cHand  =document.getElementById('cHand'),
+        cVert  =document.getElementById('cVert'),
+        cLane  =document.getElementById('cLane'),
+        cWing  =document.getElementById('cWing'),
+        calcPred=document.getElementById('calcPred'),
+        calcComment=document.getElementById('calcComment');
+  const COMMENTS = [
+    [1.0,  "Elite combine signal — a defensive cornerstone profile."],
+    [0.5,  "Above-average defender on physical tools alone."],
+    [0.0,  "League-average expected impact, slightly positive."],
+    [-0.5, "A neutral combine line; defense will hinge on scheme &amp; motor."],
+    [-1.5, "Below-average projection — needs the eye test to override."],
+    [-99,  "Combine flags real defensive risk; bet on skill, not body."]
+  ];
+  function commentFor(v){ for (const [m,t] of COMMENTS) if (v>=m) return t; return ''; }
+  function calc(){
+    const v = window.DBPM_PREDICT({
+      weight: +cWeight.value, hand: +cHand.value, vert: +cVert.value,
+      lane: +cLane.value, wingspan: +cWing.value
+    });
+    if (v == null || !Number.isFinite(v)){ calcPred.textContent='—'; calcComment.textContent='—'; return; }
+    calcPred.textContent = (v>0?'+':'') + v.toFixed(2);
+    calcPred.style.color = v >= 0 ? 'var(--orange-2)' : '#fff';
+    calcComment.innerHTML = commentFor(v);
+  }
+  [cWeight,cHand,cVert,cLane,cWing].forEach(el => el.addEventListener('input', calc));
+  calc();
 
-document.getElementById('restoreBtn').addEventListener('click',()=>{
-  if (!confirm('Restore all data to defaults? Custom rows will be lost.')) return;
-  localStorage.removeItem(LS_KEY); players=structuredClone(SEED); save(); renderAll();
-});
+  // 2023–25 backtest: Actual vs Predicted scatter
+  const svg = document.getElementById('scatter');
+  const W=800, H=460, PAD={t:24,r:30,b:46,l:50};
+  const pts = PLAYERS.filter(p => p.actual != null && p.pred != null);
+  const lo = Math.min(...pts.flatMap(p => [p.pred, p.actual])) - 0.6;
+  const hi = Math.max(...pts.flatMap(p => [p.pred, p.actual])) + 0.6;
+  const sx = v => PAD.l + (v - lo)/(hi-lo) * (W - PAD.l - PAD.r);
+  const sy = v => H - PAD.b - (v - lo)/(hi-lo) * (H - PAD.t - PAD.b);
 
-['searchInput','classFilter','dbpmFilter','gemToggle'].forEach(id=>
-  document.getElementById(id).addEventListener('input',renderAll));
-
-window.addEventListener('resize',()=>renderScatter(enrichAll()));
-save(); renderAll();
+  let h = '';
+  h += `<rect x="${PAD.l}" y="${PAD.t}" width="${W-PAD.l-PAD.r}" height="${H-PAD.t-PAD.b}" fill="#fcfaf6" stroke="#1d1d1b"/>`;
+  // gridlines + ticks
+  for (let v=Math.ceil(lo); v<=Math.floor(hi); v++){
+    h += `<line x1="${sx(v)}" y1="${PAD.t}" x2="${sx(v)}" y2="${H-PAD.b}" stroke="#1d1d1b" stroke-opacity=".07"/>`;
+    h += `<line x1="${PAD.l}" y1="${sy(v)}" x2="${W-PAD.r}" y2="${sy(v)}" stroke="#1d1d1b" stroke-opacity=".07"/>`;
+    h += `<text x="${sx(v)}" y="${H-PAD.b+16}" font-family="IBM Plex Mono" font-size="11" fill="#5a5853" text-anchor="middle">${v}</text>`;
+    h += `<text x="${PAD.l-8}" y="${sy(v)+4}" font-family="IBM Plex Mono" font-size="11" fill="#5a5853" text-anchor="end">${v}</text>`;
+  }
+  // bold zero lines
+  if (lo < 0 && hi > 0) {
+    h += `<line x1="${sx(0)}" y1="${PAD.t}" x2="${sx(0)}" y2="${H-PAD.b}" stroke="#1d1d1b" stroke-opacity=".35" stroke-width="1.2"/>`;
+    h += `<line x1="${PAD.l}" y1="${sy(0)}" x2="${W-PAD.r}" y2="${sy(0)}" stroke="#1d1d1b" stroke-opacity=".35" stroke-width="1.2"/>`;
+  }
+  // y = x reference
+  h += `<line x1="${sx(lo)}" y1="${sy(lo)}" x2="${sx(hi)}" y2="${sy(hi)}" stroke="#1d1d1b" stroke-dasharray="5 5" stroke-opacity=".55"/>`;
+  // points: over (teal) / under (orange) the line
+  pts.forEach(p => {
+    const above = p.actual > p.pred;
+    const c = above ? '#1f6d6a' : '#d8542b';
+    h += `<circle cx="${sx(p.pred)}" cy="${sy(p.actual)}" r="5" fill="${c}" fill-opacity=".5" stroke="${c}" stroke-width="1.3"><title>${p.player} · actual ${p.actual.toFixed(2)} · pred ${p.pred.toFixed(2)}</title></circle>`;
+  });
+  // residual call-outs: top 3 over, top 2 under
+  const up = [...pts].sort((a,b)=>(b.actual-b.pred)-(a.actual-a.pred)).slice(0,3);
+  const dn = [...pts].sort((a,b)=>(a.actual-a.pred)-(b.actual-b.pred)).slice(0,2);
+  [...up, ...dn].forEach(p => {
+    h += `<text x="${sx(p.pred)+8}" y="${sy(p.actual)+4}" font-family="Archivo" font-size="11" font-weight="600" fill="#1d1d1b">${p.player}</text>`;
+  });
+  // axis titles
+  h += `<text x="${(PAD.l+W-PAD.r)/2}" y="${H-8}" font-family="Archivo Narrow" font-size="11" font-weight="700" letter-spacing="2" fill="#5a5853" text-anchor="middle">PREDICTED DBPM \u2192</text>`;
+  h += `<text transform="translate(14 ${(PAD.t+H-PAD.b)/2}) rotate(-90)" font-family="Archivo Narrow" font-size="11" font-weight="700" letter-spacing="2" fill="#5a5853" text-anchor="middle">\u2191 ACTUAL DBPM</text>`;
+  // legend
+  const nUp = pts.filter(p => p.actual > p.pred).length;
+  const nDn = pts.length - nUp;
+  h += `<g transform="translate(${W-PAD.r-180} ${PAD.t+10})">
+    <rect x="0" y="0" width="180" height="52" fill="#fff" stroke="#1d1d1b"/>
+    <circle cx="14" cy="19" r="5" fill="#1f6d6a" fill-opacity=".55" stroke="#1f6d6a" stroke-width="1.4"/>
+    <text x="26" y="23" font-family="Archivo" font-size="11" fill="#1d1d1b">Outperformed combine (n=${nUp})</text>
+    <circle cx="14" cy="39" r="5" fill="#d8542b" fill-opacity=".55" stroke="#d8542b" stroke-width="1.4"/>
+    <text x="26" y="43" font-family="Archivo" font-size="11" fill="#1d1d1b">Underperformed (n=${nDn})</text>
+  </g>`;
+  svg.innerHTML = h;
+})();
 </script>
 </body>
 </html>
