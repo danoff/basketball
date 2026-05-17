@@ -29,8 +29,7 @@ python3 -m http.server 8000
 
 Then visit `http://localhost:8000/rookie_dbpm_model_explorer.html`. The app embeds the current 2025 preferred-model complete rows and 2026 prediction rows, recalculates predictions with the preferred DBPM coefficients, supports search/filter/sort, includes a live custom-player calculator with save/delete custom rows, and can export the current board as CSV.
 
-BMad Method project context for this app lives in `_bmad-output/project-context.md`, with a Quick Flow spec and sprint status under `_bmad-output/`. The full BMad installer could not be fetched in this environment because npm registry access returned HTTP 403, so the project context was activated manually following BMad's documented manual context file path.
-Then visit `http://localhost:8000/rookie_dbpm_model_explorer.html`. The app embeds the current 2025 preferred-model complete rows and 2026 prediction rows, recalculates predictions with the preferred DBPM coefficients, supports search/filter/sort, includes a live custom-player calculator, and can export the current board as CSV.
+BMad Method project context for this app lives in `_bmad-output/project-context.md`, with technical research, a tech spec, a Quick Flow spec, and sprint status under `_bmad-output/`. The full BMad installer could not be fetched in this environment because npm registry access returned HTTP 403, so the project context and technical-spec workflow artifacts were activated manually following BMad's documented output patterns.
 
 ## Research Question
 
