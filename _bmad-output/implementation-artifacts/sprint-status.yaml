@@ -11,6 +11,3 @@ stories:
   - id: quick-3
     title: Validate browser script and embedded data counts
     status: done
-  - id: quick-4
-    title: Add BMad technical research and tech spec artifacts
-    status: done
