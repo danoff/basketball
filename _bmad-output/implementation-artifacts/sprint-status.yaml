@@ -1,0 +1,16 @@
+project: basketball-rookie-dbpm-explorer
+track: quick-flow
+status: implemented
+stories:
+  - id: quick-1
+    title: Activate BMad project context for SPA work
+    status: done
+  - id: quick-2
+    title: Finish custom prospect workflow in the single-page app
+    status: done
+  - id: quick-3
+    title: Validate browser script and embedded data counts
+    status: done
+  - id: quick-4
+    title: Add BMad technical research and tech spec artifacts
+    status: done
